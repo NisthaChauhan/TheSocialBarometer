@@ -45,3 +45,29 @@ def get_profile(url: str) -> dict:
     except Exception as e:
         print(f"Error fetching user profile: {e}")
         return {}
+import instaloader
+
+def get_post_image_url(instagram_url):
+    loader = instaloader.Instaloader(download_pictures=False, download_videos=False)
+    
+    # No login — only public posts will work
+    shortcode = instagram_url.split('/')[-2]
+    
+    try:
+        post = instaloader.Post.from_shortcode(loader.context, shortcode)
+        return post.url  # This is the direct image or video thumbnail URL
+    except Exception as e:
+        print(f"Failed to get post image: {e}")
+        return ""
+
+def get_profile_picture(instagram_url):
+    loader = instaloader.Instaloader()
+    
+    try:
+        shortcode = instagram_url.split('/')[-2]
+        post = instaloader.Post.from_shortcode(loader.context, shortcode)
+        return post.owner_profile.profile_pic_url
+    except Exception as e:
+        print(f"Failed to get profile picture: {e}")
+        return ""
+

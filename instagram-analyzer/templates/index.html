@@ -682,15 +682,15 @@
                 
                 // Calculate engagement rate with type checking
                 let likes = typeof data.post.likes_count === 'string' ? 
-                    parseInt(data.post.likes_count.replace(/,/g, '')) : 
+                    parseInt(data.post.likes_count) : 
                     data.post.likes_count;
                     
                 let comments = typeof data.post.comments_count === 'string' ? 
-                    parseInt(data.post.comments_count.replace(/,/g, '')) : 
+                    parseInt(data.post.comments_count) : 
                     data.post.comments_count;
                     
                 let followers = typeof data.profile.followers === 'string' ? 
-                    parseInt(data.profile.followers.replace(/,/g, '')) : 
+                    parseInt(data.profile.followers) : 
                     data.profile.followers;
                 
                 const engagementRate = ((likes + comments) / followers * 100).toFixed(1);
@@ -775,8 +775,8 @@
                 // Update Engagement Chart
                 const engagementChart = charts.find(chart => chart.canvas.id === 'engagementChart');
                 if (engagementChart) {
-                    const likeCount = parseInt(data.post.likes_count.replace(/,/g, ''));
-                    const commentCount = parseInt(data.post.comments_count.replace(/,/g, ''));
+                    const likeCount = parseInt(data.post.likes_count);
+                    const commentCount = parseInt(data.post.comments_count);
                     
                     engagementChart.data.datasets[0].data = [likeCount, data.post.avg_likes || likeCount * 0.6];
                     engagementChart.data.datasets[1].data = [commentCount, data.post.avg_comments || commentCount * 0.6];
@@ -832,7 +832,6 @@
                     sarcasmChart.update();
                 }
             }
-            //Error: data.post.likes_count.replace is not a function
            
             // Download PDF button
             document.getElementById('downloadPdf').addEventListener('click', function() {

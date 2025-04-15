@@ -47,7 +47,7 @@ def get_engagement(url: str) -> dict:
             "created_utc": str(post.date_utc),
             "created_local": str(post.date_local),
             "tagged_users": list(post.tagged_users),
-            "image_url": f"/{image_filename}" if image_filename else None,
+            "image_url": post.url , # This gives you the direct image URL
             "post_url": url,
         }
         
