@@ -1,0 +1,183 @@
+import json
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+import os
+
+# Configuration parameters
+CONFIG = {
+    'vocab_size': 10000,
+    'embedding_dim': 16,
+    'max_length': 100,
+    'trunc_type': 'post',
+    'padding_type': 'post',
+    'oov_tok': "<OOV>",
+    'training_size': 20000,
+    'num_epochs': 30
+}
+
+def load_and_preprocess_data(file_path):
+    """Load and preprocess the dataset."""
+    try:
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found at path: {file_path}")
+            
+        datastore = pd.read_json(file_path)
+        
+        required_columns = ['headline', 'is_sarcastic']
+        if not all(col in datastore.columns for col in required_columns):
+            raise ValueError("Dataset missing required columns: 'headline' and 'is_sarcastic'")
+            
+        sentences = datastore['headline'].tolist()
+        labels = datastore['is_sarcastic'].tolist()
+        
+        if len(sentences) == 0 or len(labels) == 0:
+            raise ValueError("Dataset is empty")
+            
+        print(f"Successfully loaded {len(sentences)} sentences")
+        return sentences, labels
+        
+    except json.JSONDecodeError:
+        print(f"Error: File at {file_path} is not a valid JSON file")
+        raise
+    except Exception as e:
+        print(f"Error loading data: {str(e)}")
+        raise
+
+def train_test_split(sentences, labels, training_size):
+    """
+    Split the data into training and testing sets.
+    
+    Args:
+        sentences (list): List of input sentences
+        labels (list): List of corresponding labels
+        training_size (int): Number of samples to use for training
+    
+    Returns:
+        tuple: (training_sentences, training_labels, testing_sentences, testing_labels)
+    """
+    if training_size > len(sentences):
+        raise ValueError(f"Training size ({training_size}) cannot be larger than dataset size ({len(sentences)})")
+    
+    # Split the data
+    training_sentences = sentences[:training_size]
+    testing_sentences = sentences[training_size:]
+    training_labels = labels[:training_size]
+    testing_labels = labels[training_size:]
+    
+    print(f"Training set size: {len(training_sentences)}")
+    print(f"Testing set size: {len(testing_sentences)}")
+    
+    return training_sentences, training_labels, testing_sentences, testing_labels
+
+def create_tokenizer(sentences, vocab_size, oov_tok):
+    """Create and fit tokenizer on the given sentences."""
+    tokenizer = Tokenizer(num_words=vocab_size, oov_token=oov_tok)
+    tokenizer.fit_on_texts(sentences)
+    return tokenizer
+
+def prepare_sequences(tokenizer, sentences, max_length, padding_type, trunc_type):
+    """Convert sentences to padded sequences."""
+    sequences = tokenizer.texts_to_sequences(sentences)
+    padded = pad_sequences(sequences, 
+                          maxlen=max_length,
+                          padding=padding_type,
+                          truncating=trunc_type)
+    return padded
+
+def create_model(vocab_size, embedding_dim, max_length):
+    """Create and compile the model."""
+    model = tf.keras.Sequential([
+        tf.keras.layers.Embedding(vocab_size, embedding_dim, input_length=max_length),
+        tf.keras.layers.GlobalAveragePooling1D(),
+        tf.keras.layers.Dense(24, activation='relu'),
+        tf.keras.layers.Dense(1, activation='sigmoid')
+    ])
+    
+    model.compile(
+        loss='binary_crossentropy',
+        optimizer='adam',
+        metrics=['accuracy']
+    )
+    return model
+
+def train_model(file_path, config):
+    """Main function to train the sarcasm detection model."""
+    try:
+        # Load and preprocess data
+        sentences, labels = load_and_preprocess_data(file_path)
+
+        # Split data
+        (training_sentences, training_labels,
+         testing_sentences, testing_labels) = train_test_split(sentences, 
+                                                             labels, 
+                                                             config['training_size'])
+
+        # Create and fit tokenizer
+        tokenizer = create_tokenizer(training_sentences, 
+                                   config['vocab_size'],
+                                   config['oov_tok'])
+
+        # Prepare sequences
+        training_padded = prepare_sequences(tokenizer,
+                                          training_sentences,
+                                          config['max_length'],
+                                          config['padding_type'],
+                                          config['trunc_type'])
+        
+        testing_padded = prepare_sequences(tokenizer,
+                                         testing_sentences,
+                                         config['max_length'],
+                                         config['padding_type'],
+                                         config['trunc_type'])
+
+        # Convert to numpy arrays
+        training_padded = np.array(training_padded)
+        training_labels = np.array(training_labels)
+        testing_padded = np.array(testing_padded)
+        testing_labels = np.array(testing_labels)
+
+        # Create and train model
+        model = create_model(config['vocab_size'],
+                            config['embedding_dim'],
+                            config['max_length'])
+        
+        history = model.fit(
+            training_padded,
+            training_labels,
+            epochs=config['num_epochs'],
+            validation_data=(testing_padded, testing_labels),
+            verbose=1
+        )
+        
+        return model, tokenizer, history
+        
+    except Exception as e:
+        print(f"Error in train_model: {str(e)}")
+        raise
+
+# Usage
+if __name__ == "__main__":
+    try:
+        file_path = "C:/Nistha/Insta/SarcasmDetection/Sarcasm_Headlines_Dataset.json"
+        print(f"Attempting to load file from: {file_path}")
+        model, tokenizer, history = train_model(file_path, CONFIG)
+        print("Model training completed successfully!")
+        
+    except Exception as e:
+        print(f"Training failed: {str(e)}")
+
+
+
+
+sentence = ["granny starting to fear unicorns in the garden maybe real"]
+sequences = tokenizer.texts_to_sequences(sentence)
+padded = pad_sequences(sequences, maxlen=CONFIG[max_length], padding=CONFIG[padding_type], truncating=CONFIG[trunc_type])
+
+
+if (model.predict(padded)) > 0.5:
+     print("Predicted: Sarcastic with a score of",model.predict(padded))
+else:
+    print("Predicted: Not Sarcastic with a score of",model.predict(padded))

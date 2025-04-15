@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Analyzer</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        :root{
+            --primary-color: #405DE6;
+            --primary-gradient: linear-gradient(45deg, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D);
+            --secondary-color: #833AB4;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --success-color: #4cc9f0;
+            --warning-color: #f72585;
+            --info-color: #4895ef;
+            --border-radius: 16px;
+            --card-shadow: 0 10px 20px rgba(0,0,0,0.05);
+       }
+        
+        *{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+       }
+        
+        body{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            background-color: #f0f2f5;
+            color: #333;
+            background-image: radial-gradient(circle at 10% 20%, rgba(216, 241, 230, 0.46) 0.1%, rgba(233, 226, 248, 0.28) 90.1%);
+       }
+        
+        .container{
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 30px 20px;
+       }
+        
+        header{
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px 0;
+       }
+        
+        header h1{
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 800;
+            margin-bottom: 15px;
+            font-size: 3rem;
+            letter-spacing: -0.5px;
+       }
+        
+        header p{
+            color: #666;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+       }
+        
+        .form-container{
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 40px;
+            transition: transform 0.3s ease;
+       }
+        
+        .form-container:hover{
+            transform: translateY(-5px);
+       }
+        
+        .form-group{
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+       }
+        
+        input[type="text"]{
+            flex: 1;
+            padding: 16px 20px;
+            border: 2px solid #eaeaea;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+       }
+        
+        input[type="text"]:focus{
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(64, 93, 230, 0.2);
+       }
+        
+        input[type="text"]::placeholder{
+            color: #aaa;
+       }
+        
+        button{
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 16px 30px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+       }
+        
+        button:hover{
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+       }
+        
+        button:disabled{
+            background: #d1d1d1;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+       }
+        
+        .error-message{
+            color: var(--warning-color);
+            font-size: 14px;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background-color: rgba(247, 37, 133, 0.1);
+            padding: 10px 15px;
+            border-radius: 8px;
+       }
+        
+        .loading{
+            text-align: center;
+            padding: 60px 0;
+       }
+        
+        .spinner{
+            width: 70px;
+            height: 70px;
+            border: 5px solid rgba(64, 93, 230, 0.1);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 30px;
+       }
+        
+        @keyframes spin{
+            to{ transform: rotate(360deg);}
+       }
+        
+        .results-container{
+            background-color: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+       }
+        
+        .tabs{
+            display: flex;
+            background-color: #f8fafc;
+            border-bottom: 1px solid #eaeaea;
+            padding: 0 15px;
+       }
+        
+        .tab{
+            padding: 18px 24px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            position: relative;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+       }
+        
+        .tab:hover{
+            color: var(--primary-color);
+       }
+        
+        .tab.active{
+            color: var(--primary-color);
+       }
+        
+        .tab.active::after{
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary-gradient);
+       }
+        
+        .tab-content{
+            padding: 30px;
+            display: none;
+       }
+        
+        .tab-content.active{
+            display: block;
+            animation: fadeIn 0.5s;
+       }
+        
+        @keyframes fadeIn{
+            from{ opacity: 0; transform: translateY(10px);}
+            to{ opacity: 1; transform: translateY(0);}
+       }
+        
+        .tab-content h3{
+            font-size: 1.5rem;
+            margin-bottom: 25px;
+            color: #222;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+       }
+        
+        .tab-content h3:before{
+            content: '';
+            display: block;
+            width: 4px;
+            height: 24px;
+            background: var(--primary-gradient);
+            border-radius: 4px;
+       }
+        
+        .metric-card{
+            background-color: #f8fafc;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+       }
+        
+        .metric-card:hover{
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+       }
+        
+        .metric-title{
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+       }
+        
+        .metric-value{
+            font-size: 32px;
+            font-weight: 800;
+            color: #334155;
+            margin-bottom: 5px;
+       }
+        
+        .metric-score{
+            font-size: 14px;
+            color: #64748b;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+       }
+        
+        .grid{
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+       }
+        
+        .sarcasm-card{
+            background-color: #fffbeb;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 15px rgba(234, 179, 8, 0.1);
+            border: 1px solid rgba(234, 179, 8, 0.2);
+       }
+        
+        .sarcasm-label{
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, #b45309, #eab308);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+       }
+        
+        .progress-bar{
+            width: 100%;
+            height: 12px;
+            background-color: #e2e8f0;
+            border-radius: 6px;
+            margin: 15px 0;
+            overflow: hidden;
+       }
+        
+        .progress-value{
+            height: 100%;
+            background: linear-gradient(45deg, #b45309, #eab308);
+            border-radius: 6px;
+            transition: width 1s ease-in-out;
+       }
+        
+        .tag{
+            display: inline-block;
+            background-color: #dbeafe;
+            color: #2563eb;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            font-size: 13px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: 1px solid rgba(37, 99, 235, 0.1);
+       }
+        
+        .tag:hover{
+            background-color: #bfdbfe;
+            transform: translateY(-2px);
+       }
+        
+        .profile-container{
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+       }
+        
+        .profile-avatar{
+            width: 120px;
+            height: 120px;
+            background-color: #e2e8f0;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: #94a3b8;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.05);
+            background: linear-gradient(45deg, #f1f5f9, #e2e8f0);
+            border: 4px solid white;
+       }
+        
+        .profile-info{
+            flex: 1;
+       }
+        
+        .profile-name{
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: #222;
+       }
+        
+        .profile-username{
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-weight: 600;
+            font-size: 18px;
+       }
+        
+        .profile-bio{
+            color: #64748b;
+            margin-bottom: 25px;
+            font-size: 16px;
+            line-height: 1.6;
+            padding: 15px;
+            background-color: #f8fafc;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary-color);
+       }
+        
+        .profile-stats{
+            display: flex;
+            gap: 30px;
+            background-color: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.03);
+       }
+        
+        .stat{
+            margin-right: 20px;
+            position: relative;
+            padding-right: 20px;
+       }
+        
+        .stat:not(:last-child)::after{
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 30px;
+            width: 1px;
+            background-color: #e2e8f0;
+       }
+        
+        .stat-value{
+            font-weight: 800;
+            font-size: 24px;
+            color: #222;
+       }
+        
+        .stat-label{
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 500;
+       }
+        
+        /* Sentiment tab specific styles */
+        #sentimentTab .metric-card[style*="background-color: #dbeafe"]{
+            background-image: linear-gradient(120deg, #dbeafe, #c7d2fe);
+       }
+        
+        #sentimentTab .metric-card[style*="background-color: #f3e8ff"]{
+            background-image: linear-gradient(120deg, #f3e8ff, #e9d5ff);
+       }
+        
+        #sentimentTab .metric-card[style*="background-color: #dcfce7"]{
+            background-image: linear-gradient(120deg, #dcfce7, #bbf7d0);
+       }
+        
+        /* Engagement tab specific styles */
+        #engagementTab .metric-card[style*="background-color: #fee2e2"]{
+            background-image: linear-gradient(120deg, #fee2e2, #fecaca);
+       }
+        
+        #engagementTab .metric-card[style*="background-color: #dbeafe"]{
+            background-image: linear-gradient(120deg, #dbeafe, #bfdbfe);
+       }
+        
+        #engagementTab .metric-card[style*="background-color: #dcfce7"]{
+            background-image: linear-gradient(120deg, #dcfce7, #bbf7d0);
+       }
+        
+        /* Images tab specific styles */
+        #imagesTab .metric-card[style*="background-color: #e0e7ff"]{
+            background-image: linear-gradient(120deg, #e0e7ff, #c7d2fe);
+       }
+        
+        /* Hide results container by default */
+        #resultsContainer{
+            display: none;
+       }
+        
+        /* Responsive design */
+        @media(max-width: 768px){
+            .grid{
+                grid-template-columns: 1fr;
+           }
+            
+            .profile-container{
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+           }
+            
+            .profile-stats{
+                justify-content: center;
+           }
+            
+            .tabs{
+                overflow-x: auto;
+                white-space: nowrap;
+                padding: 0;
+           }
+            
+            .tab{
+                padding: 15px 20px;
+                font-size: 12px;
+           }
+            
+            .tab-content{
+                padding: 20px;
+           }
+       }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Instagram Analyzer</h1>
+            <p>Analyze sentiment, sarcasm, images, engagement, and user profiles from Instagram posts</p>
+        </header>
+        
+        <div class="form-container">
+            <form id="analyzeForm">
+                <div class="form-group">
+                    <input type="text" id="urlInput" placeholder="Enter Instagram post URL(e.g., https://www.instagram.com/p/XXXX/)" required>
+                    <button type="submit" id="analyzeButton">Analyze</button>
+                </div>
+                <div class="error-message" id="errorMessage" style="display: none;"></div>
+            </form>
+        </div>
+        
+        <div class="loading" id="loadingIndicator" style="display: none;">
+            <div class="spinner"></div>
+            <p>Analyzing Instagram post...</p>
+        </div>
+        
+        <div class="results-container" id="resultsContainer">
+            <div class="tabs">
+                <div class="tab" data-tab="profile"><i class="fas fa-user"></i> Profile</div>
+
+                <div class="tab" data-tab="engagement"><i class="fas fa-chart-bar"></i> Engagement</div>
+
+                <div class="tab" data-tab="images"><i class="fas fa-image"></i> Images</div>
+
+                <div class="tab active" data-tab="sentiment"><i class="fas fa-smile"></i> Sentiment</div>
+
+                <div class="tab" data-tab="sarcasm"><i class="fas fa-comment-dots"></i> Sarcasm</div>
+            </div>
+            
+            <!-- Sentiment Tab -->
+            <div class="tab-content active" id="sentimentTab">
+                <h3>Sentiment Analysis</h3>
+                <div class="grid">
+                    <div class="metric-card" style="background-color: #dbeafe;">
+                        <div class="metric-title"><i class="fas fa-file-alt"></i> Text Sentiment</div>
+                        <div class="metric-value" id="textSentiment">-</div>
+                        <div class="metric-score"><i class="fas fa-star"></i> Score: <span id="textSentimentScore">-</span></div>
+                    </div>
+                    <div class="metric-card" style="background-color: #f3e8ff;">
+                        <div class="metric-title"><i class="fas fa-grin"></i> Emoji Sentiment</div>
+                        <div class="metric-value" id="emojiSentiment">-</div>
+                        <div class="metric-score"><i class="fas fa-star"></i> Score: <span id="emojiSentimentScore">-</span></div>
+                    </div>
+                    <div class="metric-card" style="background-color: #dcfce7;">
+                        <div class="metric-title"><i class="fas fa-chart-line"></i> Combined Sentiment</div>
+                        <div class="metric-value" id="combinedSentiment">-</div>
+                        <div class="metric-score"><i class="fas fa-star"></i> Score: <span id="combinedSentimentScore">-</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sarcasm Tab -->
+            <div class="tab-content" id="sarcasmTab">
+                <h3>Sarcasm Detection</h3>
+                <div class="sarcasm-card">
+                    <div class="metric-title"><i class="fas fa-comment-dots"></i> Caption Analysis</div>
+                    <div class="sarcasm-label" id="sarcasmResult">-</div>
+                    <div class="progress-bar">
+                        <div class="progress-value" id="sarcasmProgressBar" style="width: 0%;"></div>
+                    </div>
+                    <div class="metric-score"><i class="fas fa-percentage"></i> Score: <span id="sarcasmScore">-</span></div>
+                </div>
+            </div>
+            
+            <!-- Images Tab -->
+            <div class="tab-content" id="imagesTab">
+                <h3>Image Clustering</h3>
+                <div class="metric-card" style="background-color: #e0e7ff;">
+                    <div class="metric-title"><i class="fas fa-images"></i> Image Categories</div>
+                    <div id="imageCategories" style="margin: 15px 0;">
+                        <!-- Tags will be inserted here -->
+                    </div>
+                    <div class="metric-score"><i class="fas fa-chart-pie"></i> Silhouette Score: <span id="silhouetteScore">-</span></div>
+                    <div style="font-size: 13px; color: #6b7280; margin-top: 15px; background-color: rgba(79, 70, 229, 0.1); padding: 10px; border-radius: 8px;">
+                        <i class="fas fa-info-circle"></i> Higher silhouette score indicates better-defined clusters
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Engagement Tab -->
+            <div class="tab-content" id="engagementTab">
+                <h3>Engagement Metrics</h3>
+                <div class="grid">
+                    <div class="metric-card" style="background-color: #fee2e2;">
+                        <div class="metric-title">
+                            <i class="fas fa-heart" style="color: #ef4444;"></i> Likes
+                        </div>
+                        <div class="metric-value" id="likesCount">-</div>
+                    </div>
+                    <div class="metric-card" style="background-color: #dbeafe;">
+                        <div class="metric-title">
+                            <i class="fas fa-comment" style="color: #3b82f6;"></i> Comments
+                        </div>
+                        <div class="metric-value" id="commentsCount">-</div>
+                    </div>
+                    <div class="metric-card" style="background-color: #dcfce7;">
+                        <div class="metric-title">
+                            <i class="fas fa-chart-line" style="color: #22c55e;"></i> Engagement Rate
+                        </div>
+                        <div class="metric-value" id="engagementRate">-</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Profile Tab -->
+            <div class="tab-content" id="profileTab">
+                <h3>User Profile</h3>
+                <div class="profile-container">
+                    <div class="profile-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="profile-info">
+                        <div class="profile-name" id="profileName">-</div>
+                        <div class="profile-username" id="profileUsername">-</div>
+                        <div class="profile-bio" id="profileBio">-</div>
+                        <div class="profile-stats">
+                            <div class="stat">
+                                <div class="stat-value" id="followersCount">-</div>
+                                <div class="stat-label">Followers</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value" id="followingCount">-</div>
+                                <div class="stat-label">Following</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function(){
+            // Elements
+            const analyzeForm = document.getElementById('analyzeForm');
+            const urlInput = document.getElementById('urlInput');
+            const analyzeButton = document.getElementById('analyzeButton');
+            const errorMessage = document.getElementById('errorMessage');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            // Handle tab switching
+            tabs.forEach(tab =>{
+                tab.addEventListener('click',() =>{
+                    // Remove active class from all tabs and contents
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    
+                    // Add active class to clicked tab and corresponding content
+                    tab.classList.add('active');
+                    const tabName = tab.getAttribute('data-tab');
+                    document.getElementById(`${tabName}Tab`).classList.add('active');
+               });
+           });
+            
+            // Handle form submission
+            analyzeForm.addEventListener('submit', async function(e){
+                e.preventDefault();
+                
+                const url = urlInput.value.trim();
+
+                if(!url.includes('instagram.com/p/') && !url.includes('instagram.com/reel/')){
+                    showError('Please enter a valid Instagram post URL');
+                    return;
+               }
+                
+                // Show loading indicator and hide results
+                errorMessage.style.display = 'none';
+                loadingIndicator.style.display = 'block';
+                resultsContainer.style.display = 'none';
+                analyzeButton.disabled = true;
+                
+                try{
+                    const response = await fetch('http://localhost:5001/api/analyze',{
+                        method: 'POST',
+                        headers:{
+                            'Content-Type': 'application/json',
+                       },
+                        body: JSON.stringify({ url}),
+                   });
+                    
+                    if(!response.ok){
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to analyze Instagram post');
+                   }
+                    
+                    const data = await response.json();
+                    displayResults(data);
+               } catch(err){
+                    showError(err.message || 'An error occurred while analyzing the post');
+                    console.error('Analysis error:', err);
+               } finally{
+                    loadingIndicator.style.display = 'none';
+                    analyzeButton.disabled = false;
+               }
+           });
+            
+            function showError(message){
+                errorMessage.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+                errorMessage.style.display = 'flex';
+           }
+            
+            function displayResults(data){
+                // Show results container
+                resultsContainer.style.display = 'block';
+                
+                // Sentiment Tab
+                if(data.sentiment){
+                    document.getElementById('textSentiment').textContent = data.sentiment.text || 'N/A';
+                    document.getElementById('textSentimentScore').textContent = data.sentiment.textScore || 'N/A';
+                    document.getElementById('emojiSentiment').textContent = data.sentiment.emoji || 'N/A';
+                    document.getElementById('emojiSentimentScore').textContent = data.sentiment.emojiScore || 'N/A';
+                    document.getElementById('combinedSentiment').textContent = data.sentiment.combined || 'N/A';
+                    document.getElementById('combinedSentimentScore').textContent = data.sentiment.combinedScore || 'N/A';
+               }
+                
+                // Sarcasm Tab
+                if(data.sarcasm){
+                    document.getElementById('sarcasmResult').textContent = data.sarcasm.result || 'N/A';
+                    document.getElementById('sarcasmScore').textContent = data.sarcasm.score || 'N/A';
+                    
+                    const progressBar = document.getElementById('sarcasmProgressBar');
+                    const scoreWidth = data.sarcasm.score ?(data.sarcasm.score * 100) + '%' : '0%';
+                    progressBar.style.width = scoreWidth;
+               }
+                
+                // Images Tab
+                if(data.images){
+                    const categoriesContainer = document.getElementById('imageCategories');
+                    categoriesContainer.innerHTML = '';
+                    
+                    if(data.images.categories && data.images.categories.length > 0){
+                        data.images.categories.forEach(category =>{
+                            const tag = document.createElement('span');
+                            tag.className = 'tag';
+                            tag.textContent = category;
+                            categoriesContainer.appendChild(tag);
+                       });
+                   } else{
+                        categoriesContainer.textContent = 'No categories detected';
+                   }
+                    
+                    document.getElementById('silhouetteScore').textContent = 
+                        data.images.silhouetteScore !== null ? data.images.silhouetteScore : 'N/A';
+               }
+                
+                // Engagement Tab
+                if(data.engagement){
+                    document.getElementById('likesCount').textContent = 
+                        numberWithCommas(data.engagement.likes || 0);
+                    document.getElementById('commentsCount').textContent = 
+                        numberWithCommas(data.engagement.comments || 0);
+                    document.getElementById('engagementRate').textContent = 
+                       (data.engagement.engagementRate || 0) + '%';
+               }
+                
+                // Profile Tab
+                if(data.profile){
+                    document.getElementById('profileName').textContent = data.profile.fullName || 'N/A';
+                    document.getElementById('profileUsername').textContent = 
+                        data.profile.username ? '@' + data.profile.username : 'N/A';
+                    document.getElementById('profileBio').textContent = data.profile.bio || 'No bio available';
+                    document.getElementById('followersCount').textContent = 
+                        numberWithCommas(data.profile.followers || 0);
+                    document.getElementById('followingCount').textContent = 
+                        numberWithCommas(data.profile.following || 0);
+               }
+           }
+            
+            function numberWithCommas(x){
+                return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+           }
+       });
+    </script>
+</body>
+</html>
