@@ -21,8 +21,8 @@ num_epochs = 30
 training_size = 20000
 
 # Load the dataset and train the model
-file_path = "C:\Nistha\Insta\WORKING\Sarcasm\Sarcasm_Headlines_Dataset.json"
-datastore = pd.read_json(file_path)
+#file_path = "C:\Nistha\Insta\WORKING\AllFiles\Sarcasm_Headlines_Dataset.json"
+datastore = pd.read_json(r"C:\Nistha\Insta\WORKING\AllFiles\Sarcasm_Headlines_Dataset.json")
 
 
 def train_test_split(datastore):
@@ -49,13 +49,16 @@ def train_test_split(datastore):
 
 
 def sarcasm_detection_model():
+    training_padded, training_labels, testing_padded, testing_labels, tokenizer = train_test_split(datastore)
     model = tf.keras.Sequential([
-        tf.keras.layers.Embedding(vocab_size, embedding_dim, input_length=max_length),
-        tf.keras.layers.GlobalAveragePooling1D(),
-        tf.keras.layers.Dense(24, activation='relu'),
-        tf.keras.layers.Dense(1, activation='sigmoid')
+        tf.keras.layers.Embedding(len(tokenizer.word_index)+1,100,input_length=max([len(i) for i in training_padded])),
+        tf.keras.layers.Bidirectional( tf.keras.layers.LSTM(128)),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dropout(0.50),
+        tf.keras.layers.Dense(64,activation='relu'),
+        tf.keras.layers.Dense(1,activation='sigmoid')
     ])
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     return model
 
 
@@ -81,19 +84,30 @@ def detect_sarcasm(caption, model, tokenizer):
     padded = pad_sequences(sequences, maxlen=max_length, padding=padding_type)
     
     prediction = model.predict(padded)[0][0]
-    if prediction > 0.8:
-            label = "Highly Sarcastic"
+    if prediction > 0.9:
+        label = "Max-Level Sarcasm"
+    elif prediction > 0.8:
+        label = "Super Sarcastic"
+    elif prediction > 0.7:
+        label = "Pretty Sarcastic"
     elif prediction > 0.6:
-        label = "Moderately Sarcastic"
+        label = "Kinda Sarcastic"
+    elif prediction > 0.5:
+        label = "Low-Key Sarcastic"
     elif prediction > 0.4:
-        label = "Mildly Sarcastic"
+        label = "Casual Sarcasm"
+    elif prediction > 0.3:
+        label = "Tiny Bit Sarcastic"
+    elif prediction > 0.2:
+        label = "Microdose of Sarcasm"
+    elif prediction > 0.1:
+        label = "Basically Genuine (But Who Knows)"
     else:
-        label = "Not Sarcastic"    
-    return label,prediction
+        label = "Totally Genuine"
 
 
 def save_model_and_tokenizer(model, tokenizer):
-    model.save("sarcasm_model.h5")
+    model.save("instagram-analyzer\models\sarcasm_model.keras")
     with open("tokenizer.pickle", "wb") as handle:
         pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
     print("Model and tokenizer saved!")
@@ -103,7 +117,9 @@ if __name__ == "__main__":
     training_padded, training_labels, testing_padded, testing_labels, tokenizer = train_test_split(datastore)
     model = sarcasm_detection_model()
     model.fit(training_padded, training_labels, epochs=num_epochs, validation_data=(testing_padded, testing_labels), verbose=1)
+    test_loss,test_acc=model.evaluate(testing_padded,testing_labels)
+    print("Model Accuracy: ",test_acc)
     
     # Save the model and tokenizer
     save_model_and_tokenizer(model, tokenizer)
-    print("Training complete!")
+    print("Training complete!") 

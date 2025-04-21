@@ -647,7 +647,7 @@
                         return;
                     }
                     
-                    // Update UI with real data from `data`
+                    // Update UI with real data from "data"
                     updateReport(data); // You need to implement this function
                 })
                 .catch(error => {
@@ -664,98 +664,119 @@
                 document.getElementById('reportDate').textContent = `Generated on ${now.toLocaleDateString('en-US', dateOptions)} at ${now.toLocaleTimeString('en-US', timeOptions)}`;
             
                 // Profile Section
-                document.getElementById('profileName').textContent = data.profile.full_name;
-                document.getElementById('profileUsername').textContent = `@${data.profile.username}`;
-                document.getElementById('profileBio').textContent = data.profile.bio;
-                document.getElementById('followers').textContent = data.profile.followers_formatted;
-                document.getElementById('following').textContent = data.profile.following_formatted;
-                document.getElementById('posts').textContent = data.profile.posts_count;
-                document.getElementById('profileImage').src = data.profile.profile_pic_url || '/api/placeholder/150/150';
+                if (data.profile) {
+                    document.getElementById('profileName').textContent = data.profile.full_name || 'N/A';
+                    document.getElementById('profileUsername').textContent = `@${data.profile.username || 'N/A'}`;
+                    document.getElementById('profileBio').textContent = data.profile.bio || 'No bio available';
+                    document.getElementById('followers').textContent = data.profile.followers_formatted || '0';
+                    document.getElementById('following').textContent = data.profile.following_formatted || '0';
+                    document.getElementById('posts').textContent = data.profile.posts_count || '0';
+                    if (document.getElementById('profileImage')) {
+                        document.getElementById('profileImage').src = data.profile.profile_pic_url || '/api/placeholder/150/150';
+                    }
+                }
             
                 // Post Section
-                document.getElementById('postImage').src = data.post.image_url || '/api/placeholder/800/500';
-                document.getElementById('postCaption').textContent = data.post.caption;
-            
-                // Engagement Metrics
-                document.getElementById('likesCount').textContent = data.post.likes_count;
-                document.getElementById('commentsCount').textContent = data.post.comments_count;
-                
-                // Calculate engagement rate
-                const engagementRate = ((parseInt(data.post.likes_count.replace(/,/g, '')) + 
-                                       parseInt(data.post.comments_count.replace(/,/g, ''))) / 
-                                       parseInt(data.profile.followers.replace(/,/g, '')) * 100).toFixed(1);
-                document.getElementById('engagementRate').textContent = engagementRate + '%';
+                if (data.post) {
+                    if (document.getElementById('postImage')) {
+                        document.getElementById('postImage').src = data.post.image_url || '/api/placeholder/800/500';
+                    }
+                    if (document.getElementById('postCaption')) {
+                        document.getElementById('postCaption').textContent = data.post.caption || 'No caption available';
+                    }
+                }
             
                 // Sentiment Analysis
-                document.getElementById('textSentiment').textContent = data.sentiment.text_sentiment.label;
-                document.getElementById('textSentimentScore').textContent = data.sentiment.text_sentiment.score.toFixed(2);
-                document.querySelector('#textSentiment').parentElement.querySelector('.progress-value').style.width = 
-                    `${(parseFloat(data.sentiment.text_sentiment.score) + 1) * 50}%`;
-                
-                document.getElementById('emojiSentiment').textContent = data.sentiment.emoji_sentiment.label;
-                document.getElementById('emojiSentimentScore').textContent = data.sentiment.emoji_sentiment.score.toFixed(2);
-                document.querySelector('#emojiSentiment').parentElement.querySelector('.progress-value').style.width = 
-                    `${(parseFloat(data.sentiment.emoji_sentiment.score) + 1) * 50}%`;
-                
-                document.getElementById('combinedSentiment').textContent = data.sentiment.combined_sentiment.label;
-                document.getElementById('combinedSentimentScore').textContent = data.sentiment.combined_sentiment.score.toFixed(2);
-                document.querySelector('#combinedSentiment').parentElement.querySelector('.progress-value').style.width = 
-                    `${(parseFloat(data.sentiment.combined_sentiment.score) + 1) * 50}%`;
-            
-                // Sarcasm Detection
-                document.getElementById('sarcasmResult').textContent = data.sarcasm.is_sarcastic ? "Sarcastic" : "Not Sarcastic";
-                document.getElementById('sarcasmScore').textContent = data.sarcasm.score.toFixed(2);
-                document.querySelector('#sarcasmResult').parentElement.querySelector('.progress-value').style.width = 
-                    `${parseFloat(data.sarcasm.score) * 100}%`;
-                
-                // Image Clustering
-                const imageCategories = document.getElementById('imageCategories');
-                imageCategories.innerHTML = ''; // Clear existing tags
-                
-                // Add new tags from the data
-                if (data.images.categories && data.images.categories.length > 0) {
-                    data.images.categories.forEach(category => {
-                        const tag = document.createElement('span');
-                        tag.className = 'tag';
-                        tag.textContent = category;
-                        imageCategories.appendChild(tag);
-                    });
-                }
-                
-                // Update clusters
-                const clusterContainer = document.querySelector('.cluster-container');
-                clusterContainer.innerHTML = ''; // Clear existing clusters
-                
-                if (data.images.clusters && data.images.clusters.length > 0) {
-                    data.images.clusters.forEach(cluster => {
-                        const clusterDiv = document.createElement('div');
-                        clusterDiv.className = 'cluster';
-                        
-                        const titleDiv = document.createElement('div');
-                        titleDiv.className = 'cluster-title';
-                        titleDiv.textContent = `Cluster: ${cluster.name} (Silhouette Score: ${cluster.silhouette_score.toFixed(2)})`;
-                        clusterDiv.appendChild(titleDiv);
-                        
-                        const imagesDiv = document.createElement('div');
-                        imagesDiv.className = 'cluster-images';
-                        
-                        if (cluster.images && cluster.images.length > 0) {
-                            cluster.images.forEach(image => {
-                                const img = document.createElement('img');
-                                img.className = 'cluster-image';
-                                img.src = image.url || '/api/placeholder/120/120';
-                                img.alt = image.description || 'Cluster image';
-                                imagesDiv.appendChild(img);
-                            });
+                if (data.sentiment) {
+                    if (data.sentiment.text_sentiment) {
+                        if (document.getElementById('textSentiment')) {
+                            document.getElementById('textSentiment').textContent = data.sentiment.text_sentiment.label || 'N/A';
                         }
-                        
-                        clusterDiv.appendChild(imagesDiv);
-                        clusterContainer.appendChild(clusterDiv);
-                    });
+                        if (document.getElementById('textSentimentScore')) {
+                            document.getElementById('textSentimentScore').textContent = (data.sentiment.text_sentiment.score || 0).toFixed(2);
+                        }
+                        const textSentimentProgress = document.querySelector('#textSentiment').parentElement.querySelector('.progress-value');
+                        if (textSentimentProgress) {
+                            textSentimentProgress.style.width = `${(parseFloat(data.sentiment.text_sentiment.score || 0) + 1) * 50}%`;
+                        }
+                    }
+
+                    if (data.sentiment.emoji_sentiment) {
+                        if (document.getElementById('emojiSentiment')) {
+                            document.getElementById('emojiSentiment').textContent = data.sentiment.emoji_sentiment.label || 'N/A';
+                        }
+                        if (document.getElementById('emojiSentimentScore')) {
+                            document.getElementById('emojiSentimentScore').textContent = (data.sentiment.emoji_sentiment.score || 0).toFixed(2);
+                        }
+                        const emojiSentimentProgress = document.querySelector('#emojiSentiment').parentElement.querySelector('.progress-value');
+                        if (emojiSentimentProgress) {
+                            emojiSentimentProgress.style.width = `${(parseFloat(data.sentiment.emoji_sentiment.score || 0) + 1) * 50}%`;
+                        }
+                    }
+
+                    if (data.sentiment.combined_sentiment) {
+                        if (document.getElementById('combinedSentiment')) {
+                            document.getElementById('combinedSentiment').textContent = data.sentiment.combined_sentiment.label || 'N/A';
+                        }
+                        if (document.getElementById('combinedSentimentScore')) {
+                            document.getElementById('combinedSentimentScore').textContent = (data.sentiment.combined_sentiment.score || 0).toFixed(2);
+                        }
+                        const combinedSentimentProgress = document.querySelector('#combinedSentiment').parentElement.querySelector('.progress-value');
+                        if (combinedSentimentProgress) {
+                            combinedSentimentProgress.style.width = `${(parseFloat(data.sentiment.combined_sentiment.score || 0) + 1) * 50}%`;
+                        }
+                    }
                 }
-                
-                // Update all charts with the new data
-                updateCharts(data);
+
+                // Sarcasm Detection
+                if (data.sarcasm) {
+                    try {
+                        // Update sarcasm result text
+                        const sarcasmElement = document.getElementById('sarcasmResult');
+                        if (sarcasmElement) {
+                            sarcasmElement.textContent = data.sarcasm.is_sarcastic ? "Sarcastic" : "Not Sarcastic";
+                        }
+
+                        // Update sarcasm score
+                        const sarcasmScoreElement = document.getElementById('sarcasmScore');
+                        if (sarcasmScoreElement) {
+                            sarcasmScoreElement.textContent = (data.sarcasm.score || 0).toFixed(2);
+                        }
+
+                        // Update progress bar width
+                        const progressBar = document.querySelector('#sarcasmResult').closest('.metric-card').querySelector('.progress-value');
+                        if (progressBar) {
+                            progressBar.style.width = `${parseFloat(data.sarcasm.score || 0) * 100}%`;
+                        }
+
+                        // Update charts if they exist
+                        const sarcasmChart = Object.values(Chart.instances).find(chart => chart.canvas.id === 'sarcasmChart');
+                        if (sarcasmChart && typeof data.sarcasm.score === 'number') {
+                            const sarcasmScore = data.sarcasm.score;
+                            const notSarcastic = 100 - (sarcasmScore * 100);
+                            
+                            let mildSarcastic = 0;
+                            let moderateSarcastic = 0;
+                            let highlySarcastic = 0;
+                            
+                            if (sarcasmScore < 0.33) {
+                                mildSarcastic = sarcasmScore * 100;
+                            } else if (sarcasmScore < 0.66) {
+                                mildSarcastic = 33;
+                                moderateSarcastic = (sarcasmScore - 0.33) * 100;
+                            } else {
+                                mildSarcastic = 33;
+                                moderateSarcastic = 33;
+                                highlySarcastic = (sarcasmScore - 0.66) * 100;
+                            }
+                            
+                            sarcasmChart.data.datasets[0].data = [notSarcastic, mildSarcastic, moderateSarcastic, highlySarcastic];
+                            sarcasmChart.update();
+                        }
+                    } catch (error) {
+                        console.error('Error updating sarcasm UI:', error);
+                    }
+                }
             }
             
             function updateCharts(data) {
@@ -765,8 +786,8 @@
                 // Update Engagement Chart
                 const engagementChart = charts.find(chart => chart.canvas.id === 'engagementChart');
                 if (engagementChart) {
-                    const likeCount = parseInt(data.post.likes_count.replace(/,/g, ''));
-                    const commentCount = parseInt(data.post.comments_count.replace(/,/g, ''));
+                    const likeCount = parseInt(data.post.likes_count);
+                    const commentCount = parseInt(data.post.comments_count);
                     
                     engagementChart.data.datasets[0].data = [likeCount, data.post.avg_likes || likeCount * 0.6];
                     engagementChart.data.datasets[1].data = [commentCount, data.post.avg_comments || commentCount * 0.6];
@@ -822,7 +843,6 @@
                     sarcasmChart.update();
                 }
             }
-            //Error: data.post.likes_count.replace is not a function
            
             // Download PDF button
             document.getElementById('downloadPdf').addEventListener('click', function() {

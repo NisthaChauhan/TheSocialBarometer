@@ -31,9 +31,9 @@ def train_test_split(datastore):
         labels.append(row['is_sarcastic'])
     
     training_sentences = sentences[:training_size]
-    testing_sentences = sentences[training_size:]
+    testing_sentences = sentences[training_size:]   #data
     training_labels = labels[:training_size]
-    testing_labels = labels[training_size:]
+    testing_labels = labels[training_size:]     #labels
 
     tokenizer = Tokenizer(num_words=vocab_size, oov_token=oov_tok)
     tokenizer.fit_on_texts(training_sentences)
@@ -116,7 +116,9 @@ if __name__ == "__main__":
         training_padded, training_labels, testing_padded, testing_labels, tokenizer = train_test_split(datastore)
         model = sarcasm_detection_model()
         model.fit(training_padded, training_labels, epochs=num_epochs, validation_data=(testing_padded, testing_labels), verbose=1)
-        
+        test_loss,test_acc=model.evaluate(testing_padded,testing_labels)
+        print(test_acc)
+
         # Save the model and tokenizer
         save_model_and_tokenizer(model, tokenizer)
         print("Training complete!")

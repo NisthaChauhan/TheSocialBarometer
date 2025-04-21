@@ -1,0 +1,176 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt 
+import seaborn as sns
+import re
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from keras.callbacks import EarlyStopping , ReduceLROnPlateau
+from nltk.stem import PorterStemmer , WordNetLemmatizer
+import tensorflow as tf
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score , classification_report
+from tensorflow.keras.layers import Conv1D , Flatten , Dense , Embedding , Dropout , MaxPooling1D
+from tensorflow.keras import Sequential
+
+nltk.download("stopwords")
+nltk.download("words")
+nltk.download("punkt")
+
+df=pd.read_csv(r"C:\Users\nisth\Downloads\tweet_emotions.csv\tweet_emotions.csv")
+## process missing values in text
+
+df["Text"].fillna("unknown" , inplace = True)
+
+df["Text"].replace("" , inplace = True)
+## preprocessing text
+
+def process_Text(Text):
+    
+    ## transform text to lowercase
+    Text = Text.lower()
+    
+    ## remove punctuations
+    Text = re.sub(r"[^\w\s]" , "" , Text)
+    
+    ## remove numbers
+    Text = re.sub(r"\d+" , "" , Text)
+    
+    ## split text into tokens
+    tokens = word_tokenize(Text)
+    
+    ## remove stopwords
+    stop_words = set(stopwords.words("English"))
+    tokens = [word for word in tokens if word not in stop_words]
+    
+    ## Stemmer
+    stemmer = PorterStemmer()
+    stemme_tokens = [stemmer.stem(token) for token in tokens]
+    
+    ## Lemmatizer
+    lemmatizer = WordNetLemmatizer()
+    lemmatize_tokens = [lemmatizer.lemmatize(token) for token in stemme_tokens]
+    
+    return " ".join(lemmatize_tokens)
+df["processed_Text"] = df["Text"].apply(process_Text)
+from sklearn.preprocessing import LabelEncoder
+
+Encoder = LabelEncoder()
+
+df["Emotion"] = Encoder.fit_transform(df["Emotion"])
+data = df.drop("Text" , axis = 1)
+X = data["processed_Text"]
+
+y = df["Emotion"]
+x_train , x_test , y_train , y_test = train_test_split(X , y , test_size = 0.2 , 
+                                                      shuffle = True , random_state = 42)
+
+## Tokenizer
+
+tokenizer = Tokenizer()
+tokenizer.fit_on_texts(x_train)
+
+train_sequences = tokenizer.texts_to_sequences(x_train)
+test_sequences = tokenizer.texts_to_sequences(x_test)
+# pad sequences#
+
+max_len = 100
+
+train_sequences = pad_sequences(train_sequences , maxlen = max_len ,
+                               padding = "post" ,
+                               truncating = "post")
+
+
+test_sequences = pad_sequences(test_sequences , maxlen = max_len ,
+                              padding = "post" , 
+                              truncating = "post")
+## calculate vocab_size
+
+vocab_size = len(tokenizer.word_index) + 1
+
+## set embedding dim
+
+embedding_dim = 50
+
+## set num of classes
+
+num_classes = 6
+
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Conv1D, MaxPooling1D, Flatten, Dropout
+from tensorflow.keras.regularizers import l2
+
+# بناء النموذج
+model = Sequential()
+
+# طبقة Conv1D مع Regularization و Dropout
+model.add(Embedding(input_dim = vocab_size , 
+                   output_dim = embedding_dim ,
+                   input_length = max_len))
+model.add(Conv1D(64, kernel_size=3, activation='relu', kernel_regularizer=l2(0.002)))
+model.add(MaxPooling1D(pool_size=2))
+model.add(Dropout(0.5))  # Dropout لتقليل الافراط في التدريب
+
+model.add(Conv1D(128, kernel_size=3, activation='relu', kernel_regularizer=l2(0.002)))
+model.add(MaxPooling1D(pool_size=2))
+model.add(Dropout(0.5))
+
+model.add(Flatten())
+
+model.add(Dense(128, activation='relu', kernel_regularizer=l2(0.002)))
+model.add(Dropout(0.5))
+model.add(Dense(64, activation='relu', kernel_regularizer=l2(0.002)))
+model.add(Dropout(0.5))
+
+model.add(Dense(num_classes, activation='softmax'))
+
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+history = model.fit(train_sequences, y_train, epochs=40, batch_size=64, 
+                    validation_data=(test_sequences, y_test))
+
+test_loss, test_acc = model.evaluate(test_sequences, y_test)
+print(f'Test Accuracy: {test_acc}')
+test_accuracy , test_loss = model.evaluate(test_sequences , y_test)
+y_pred = model.predict(test_sequences)
+from textblob import TextBlob
+
+def sentiment_analysis(processed_Text):
+    blob = TextBlob(processed_Text)
+    classified = blob.sentiment.polarity
+    
+    if classified <= 0:
+        return "sadness"
+    
+    elif 0 < classified < 2:
+        return "anger"
+    
+    elif 1 < classified  <3:
+        return "fear"
+    
+    elif 2 < classified  <4:
+        return "surprise"
+    
+    elif  3 < classified  <5:
+        return "love"
+    
+    else:
+        return "happy"
+    
+
+test_Texts = [
+
+    "this situation is making me really nervous and anxious",
+    "this makes me so angry, i can not stand it anymore",
+    " it is hard to find joy in anything these days"
+
+]
+
+
+for text in test_Texts:
+    sentiment = sentiment_analysis(text)
+    print(f" test_texts: {text}\nsentiment :{sentiment}\n")
