@@ -440,6 +440,21 @@
         <div id="report">
             <div class="date-time" id="reportDate">Generated on April 14, 2025 at 10:30 AM</div>
             
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             <!-- Profile Section -->
             <div class="card">
                 <div class="section-title"><i class="fas fa-user"></i> User Profile</div>
@@ -466,7 +481,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Post Section -->
             <div class="card">
                 <div class="section-title"><i class="fas fa-image"></i> Analyzed Post</div>
@@ -594,6 +609,40 @@
         </div>
     </div>
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Set the current date and time
@@ -654,7 +703,7 @@
                     document.getElementById('following').textContent = data.profile.following_formatted || '0';
                     document.getElementById('posts').textContent = data.profile.posts_count || '0';
                     if (document.getElementById('profileImage')) {
-                        document.getElementById('profileImage').src = data.profile.profile_pic_url || '/api/placeholder/150/150';
+                        document.getElementById('profileImage').src = data.profile.profile_pic || '/api/placeholder/150/150';
                     }
                 }
             

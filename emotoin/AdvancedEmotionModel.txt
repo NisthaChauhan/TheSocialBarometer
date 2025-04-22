@@ -1,0 +1,224 @@
+import os
+import pickle
+import numpy as np
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+from nltk.stem import WordNetLemmatizer
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+import nltk
+import re
+
+class AdvancedEmotionModel:
+    """
+    A machine learning model for emotion classification using TF-IDF and Random Forest
+    """
+    
+    def __init__(self, model_dir='models'):
+        self.model_dir = model_dir
+        self.model_path = os.path.join(model_dir, 'advanced_emotion_model.pkl')
+        self.vectorizer_path = os.path.join(model_dir, 'tfidf_vectorizer.pkl')
+        self.label_map_path = os.path.join(model_dir, 'emotion_label_map.pkl')
+        
+        # Initialize components
+        self.model = None
+        self.vectorizer = None
+        self.label_map = None
+        
+        # Ensure NLTK resources are available
+        try:
+            nltk.data.find('corpora/stopwords')
+        except LookupError:
+            nltk.download('stopwords')
+            nltk.download('wordnet')
+            nltk.download('punkt')
+        
+        # Create model directory if it doesn't exist
+        os.makedirs(model_dir, exist_ok=True)
+        
+        # Try to load existing model
+        self._load_model()
+    
+    def _preprocess_text(self, text):
+        """Clean and preprocess text for analysis"""
+        if pd.isna(text) or not isinstance(text, str):
+            return ""
+        
+        # Convert to lowercase and remove special characters
+        text = text.lower()
+        text = re.sub(r'http\S+|www\S+|https\S+', '', text)  # Remove URLs
+        text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
+        text = re.sub(r'\s+', ' ', text).strip()  # Remove extra spaces
+        
+        # Tokenize and remove stopwords
+        stop_words = set(stopwords.words('english'))
+        tokens = word_tokenize(text)
+        tokens = [word for word in tokens if word not in stop_words]
+        
+        # Lemmatize tokens
+        lemmatizer = WordNetLemmatizer()
+        tokens = [lemmatizer.lemmatize(word) for word in tokens]
+        
+        return ' '.join(tokens)
+    
+    def train(self, data_path, text_column='content', label_column='sentiment', test_size=0.2, random_state=42):
+        """Train the model on the provided dataset"""
+        # Load data
+        print(f"Loading data from {data_path}...")
+        df = pd.read_csv(data_path)
+        df[text_column].fillna("", inplace=True)
+        
+        # Preprocess text
+        print("Preprocessing text data...")
+        df['processed_text'] = df[text_column].apply(self._preprocess_text)
+        
+        # Create label mapping
+        print("Creating label mapping...")
+        unique_labels = df[label_column].unique()
+        self.label_map = {i: label for i, label in enumerate(unique_labels)}
+        reverse_label_map = {label: i for i, label in self.label_map.items()}
+        
+        # Convert string labels to numeric
+        df['label_id'] = df[label_column].map(reverse_label_map)
+        
+        # Split data
+        X_train, X_test, y_train, y_test = train_test_split(
+            df['processed_text'], 
+            df['label_id'],
+            test_size=test_size,
+            random_state=random_state,
+            stratify=df['label_id']
+        )
+        
+        # Create and fit TF-IDF vectorizer
+        print("Creating TF-IDF features...")
+        self.vectorizer = TfidfVectorizer(
+            max_features=5000,
+            min_df=5,
+            max_df=0.8,
+            ngram_range=(1, 2)
+        )
+        
+        X_train_tfidf = self.vectorizer.fit_transform(X_train)
+        X_test_tfidf = self.vectorizer.transform(X_test)
+        
+        # Train Random Forest model
+        print("Training Random Forest model...")
+        self.model = RandomForestClassifier(
+            n_estimators=200,
+            max_depth=20,
+            random_state=random_state,
+            n_jobs=-1
+        )
+        
+        self.model.fit(X_train_tfidf, y_train)
+        
+        # Evaluate model
+        print("Evaluating model...")
+        y_pred = self.model.predict(X_test_tfidf)
+        
+        # Print classification report
+        target_names = [self.label_map[i] for i in range(len(self.label_map))]
+        print(classification_report(y_test, y_pred, target_names=target_names))
+        
+        # Save model
+        self._save_model()
+        
+        return {
+            'accuracy': (y_pred == y_test).mean(),
+            'model_path': self.model_path,
+            'vectorizer_path': self.vectorizer_path,
+            'label_map_path': self.label_map_path
+        }
+    
+    def _save_model(self):
+        """Save model and related components to disk"""
+        print(f"Saving model to {self.model_path}...")
+        
+        with open(self.model_path, 'wb') as f:
+            pickle.dump(self.model, f)
+        
+        with open(self.vectorizer_path, 'wb') as f:
+            pickle.dump(self.vectorizer, f)
+        
+        with open(self.label_map_path, 'wb') as f:
+            pickle.dump(self.label_map, f)
+        
+        print("Model saved successfully")
+    
+    def _load_model(self):
+        """Load model and related components from disk"""
+        try:
+            if os.path.exists(self.model_path) and os.path.exists(self.vectorizer_path) and os.path.exists(self.label_map_path):
+                with open(self.model_path, 'rb') as f:
+                    self.model = pickle.load(f)
+                
+                with open(self.vectorizer_path, 'rb') as f:
+                    self.vectorizer = pickle.load(f)
+                
+                with open(self.label_map_path, 'rb') as f:
+                    self.label_map = pickle.load(f)
+                
+                print("Loaded existing model successfully")
+                return True
+        except Exception as e:
+            print(f"Error loading model: {str(e)}")
+        
+        print("No existing model found or error loading model")
+        return False
+    
+    def predict(self, text):
+        """Predict emotion for a given text"""
+        if not all([self.model, self.vectorizer, self.label_map]):
+            raise ValueError("Model not loaded. Train model first or check model path.")
+        
+        # Preprocess text
+        processed_text = self._preprocess_text(text)
+        
+        # Vectorize text
+        text_tfidf = self.vectorizer.transform([processed_text])
+        
+        # Get prediction and probabilities
+        prediction = self.model.predict(text_tfidf)[0]
+        probabilities = self.model.predict_proba(text_tfidf)[0]
+        
+        # Get emotion name and confidence
+        emotion = self.label_map[prediction]
+        confidence = float(probabilities[prediction])
+        
+        # Get top 3 emotions with probabilities
+        top_emotions = []
+        for idx, prob in sorted(enumerate(probabilities), key=lambda x: x[1], reverse=True)[:3]:
+            if prob > 0.05:  # Only include emotions with >5% probability
+                top_emotions.append({
+                    'emotion': self.label_map[idx],
+                    'probability': float(prob)
+                })
+        
+        return {
+            'primary_emotion': emotion,
+            'confidence': confidence,
+            'top_emotions': top_emotions,
+            'processed_text': processed_text
+        }
+
+# Example usage
+if __name__ == "__main__":
+    model = AdvancedEmotionModel()
+    
+    # Train if no model exists
+    if model.model is None:
+        data_path = r"C:\Users\nisth\Downloads\tweet_emotions.csv\tweet_emotions.csv"
+        model.train(data_path)
+    
+    # Test with sample text
+    sample_text = "I'm feeling so happy and excited about this new project!"
+    result = model.predict(sample_text)
+    print(f"Sample text: {sample_text}")
+    print(f"Predicted emotion: {result['primary_emotion']} (Confidence: {result['confidence']:.2f})")
+    print("Top emotions:")
+    for emotion in result['top_emotions']:
+        print(f"  - {emotion['emotion']}: {emotion['probability']:.2f}")

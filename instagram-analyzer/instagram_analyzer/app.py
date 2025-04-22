@@ -58,7 +58,6 @@ def analyze_post():
             'sentiment': sentiment_data,
             'sarcasm': sarcasm_data,
             'images': image_data,
-
             'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         

@@ -36,7 +36,7 @@ def get_engagement(url: str) -> dict:
             "comments_count": post.comments,
             "caption": post.caption if post.caption else "",
             "image_url": image_url,
-            "post_url": f"https://www.instagram.com/p/{shortcode}/"
+            "post_url": url
         }
     except Exception as e:
         print(f"Error fetching engagement metrics: {e}")

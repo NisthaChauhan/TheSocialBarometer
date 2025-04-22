@@ -284,4 +284,3 @@ def analyze_images(url):
             "image_count": 0
         }
         print(result)
-analyze_images('https://www.instagram.com/p/DGRhmgbSZ3A/?img_index=1')

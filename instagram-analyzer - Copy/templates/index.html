@@ -444,7 +444,7 @@
             <div class="card">
                 <div class="section-title"><i class="fas fa-user"></i> User Profile</div>
                 <div class="profile-section">
-                    <img src="/api/placeholder/150/150" alt="Profile" class="profile-image" id="profileImage">
+                    <img src="" alt="Profile" class="profile-image" id="profileImage">
                     <div class="profile-details">
                         <h2 class="profile-name" id="profileName">Emma Johnson</h2>
                         <div class="profile-username" id="profileUsername">@emmajohnson</div>
@@ -471,8 +471,8 @@
             <div class="card">
                 <div class="section-title"><i class="fas fa-image"></i> Analyzed Post</div>
                 <div class="post-section">
-                    <img src="/api/placeholder/800/500" alt="Post" class="post-image" id="postImage">
-                    <div class="post-caption" id="postCaption">Sunset vibes in Bali 🌴🌅 Can't believe it's our last night here! The food, the people, the beaches - everything has been absolutely perfect. Already planning our next trip! #bali #sunset #vacation #islandlife #travel</div>
+                    <img src="" alt="Post" class="post-image" id="postImage">
+                    <div class="post-caption" id="postCaption"></div>
                 </div>
             </div>
             
@@ -585,26 +585,8 @@
                 <div class="section-title"><i class="fas fa-images"></i> Image Clustering</div>
                 <div>
                     <div id="imageCategories">
-                        <span class="tag">Sunset</span>
-                        <span class="tag">Beach</span>
-                        <span class="tag">Nature</span>
-                        <span class="tag">Travel</span>
-                        <span class="tag">Ocean</span>
                     </div>
-                    <div class="cluster-container">
-                        <div class="cluster">
-                            <div class="cluster-title">Cluster: Nature (Silhouette Score: 0.78)</div>
-                            <div class="cluster-images">
-                                <img src="/api/placeholder/120/120" alt="Image 1" class="cluster-image">
-                                <img src="/api/placeholder/120/120" alt="Image 2" class="cluster-image">
-                            </div>
-                        </div>
-                        <div class="cluster">
-                            <div class="cluster-title">Cluster: Beach (Silhouette Score: 0.82)</div>
-                            <div class="cluster-images">
-                                <img src="/api/placeholder/120/120" alt="Image 3" class="cluster-image">
-                            </div>
-                        </div>
+                    <div class="cluster-container" id="clusterContainer">
                     </div>
                 </div>
             </div>
@@ -776,6 +758,51 @@
                     } catch (error) {
                         console.error('Error updating sarcasm UI:', error);
                     }
+                }
+
+                // Image Clustering Section
+                if (data.images && data.images.clusters) {
+                    const imageCategories = document.getElementById('imageCategories');
+                    const clusterContainer = document.getElementById('clusterContainer');
+                    
+                    // Clear existing content
+                    imageCategories.innerHTML = '';
+                    clusterContainer.innerHTML = '';
+                    
+                    // Add image categories/tags
+                    if (data.images.categories && data.images.categories.length > 0) {
+                        data.images.categories.forEach(category => {
+                            const tag = document.createElement('span');
+                            tag.className = 'tag';
+                            tag.textContent = category;
+                            imageCategories.appendChild(tag);
+                        });
+                    }
+                    
+                    // Create clusters
+                    data.images.clusters.forEach(cluster => {
+                        const clusterDiv = document.createElement('div');
+                        clusterDiv.className = 'cluster';
+                        
+                        const titleDiv = document.createElement('div');
+                        titleDiv.className = 'cluster-title';
+                        titleDiv.textContent = `Cluster: ${cluster.name} (Silhouette Score: ${cluster.silhouette_score.toFixed(2)})`;
+                        clusterDiv.appendChild(titleDiv);
+                        
+                        const imagesDiv = document.createElement('div');
+                        imagesDiv.className = 'cluster-images';
+                        
+                        cluster.images.forEach(imageUrl => {
+                            const img = document.createElement('img');
+                            img.src = imageUrl;
+                            img.className = 'cluster-image';
+                            img.alt = 'Cluster image';
+                            imagesDiv.appendChild(img);
+                        });
+                        
+                        clusterDiv.appendChild(imagesDiv);
+                        clusterContainer.appendChild(clusterDiv);
+                    });
                 }
             }
             

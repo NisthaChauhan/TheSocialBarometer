@@ -39,7 +39,7 @@ def get_profile(url: str) -> dict:
             "following_formatted": analysis_functions.format_large_number(followees),
             "bio": profile.biography,
             "profile_pic_url": profile.profile_pic_url,  # Return direct URL instead of local path
-            "profile_url": f"https://www.instagram.com/{profile.username}/"
+            "profile_pic": url,
         }
     except Exception as e:
         print(f"Error fetching user profile: {e}")

@@ -6,7 +6,6 @@ import pandas as pd
 from datetime import datetime
 import sys
 
-# Add the parent directory to Python's path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import analysis modules
@@ -17,14 +16,14 @@ from instagram_analyzer.engagement import get_engagement
 from instagram_analyzer.profile import get_profile
 
 
-template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'templates'))
-static_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'static'))
+template_dir=os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'templates'))
+static_dir=os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'static'))
 
-app = Flask(__name__, 
+app=Flask(__name__, 
            template_folder=template_dir,
            static_folder=static_dir)
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  
+app.config['UPLOAD_FOLDER']='static/uploads'
+app.config['MAX_CONTENT_LENGTH']=16 * 1024 * 1024  
 # Ensure upload directory exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -38,22 +37,22 @@ def analyze_post():
     Main API endpoint to analyze an Instagram post
     """
     try:
-        data = request.get_json()
-        instagram_url = data.get('url', '')
+        data=request.get_json()
+        instagram_url=data.get('url', '')
         
         if not instagram_url or not ('instagram.com/p/' in instagram_url or 'instagram.com/reel/' in instagram_url):
             return jsonify({'error': 'Invalid Instagram URL'}), 400
         
         # Run all analyses
-        profile_data = get_profile(instagram_url)
-        engagement_data = get_engagement(instagram_url)
-        sentiment_data = analyze_sentiment(instagram_url)
-        sarcasm_data = detect_sarcasm(instagram_url)
-        image_data = analyze_images(instagram_url)
+        profile_data=get_profile(instagram_url)
+        engagement_data=get_engagement(instagram_url)
+        sentiment_data=analyze_sentiment(instagram_url)
+        sarcasm_data=detect_sarcasm(instagram_url)
+        image_data=analyze_images(instagram_url)
         
 
         # Combine all data
-        result = {
+        result={
             'profile': profile_data,
             'post': engagement_data,
             'sentiment': sentiment_data,
