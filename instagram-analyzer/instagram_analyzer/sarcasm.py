@@ -133,10 +133,9 @@ def detect_sarcasm(url: str) -> dict:
             "score": float(prediction),
             "interpretation": interpretation
         }
-        print(result)
-    
+        return result    
     except Exception as e:
         print(f"Error detecting sarcasm: {e}")
         result= {"result": "Error", "score": 0, "interpretation": "Error analyzing caption"}
-        print(result)
+        return result
 

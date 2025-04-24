@@ -22,7 +22,7 @@ static_dir=os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'static
 app=Flask(__name__, 
            template_folder=template_dir,
            static_folder=static_dir)
-app.config['UPLOAD_FOLDER']='static/uploads'
+app.config['UPLOAD_FOLDER']='instagram-analyzer/static/uploads'
 app.config['MAX_CONTENT_LENGTH']=16 * 1024 * 1024  
 # Ensure upload directory exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
