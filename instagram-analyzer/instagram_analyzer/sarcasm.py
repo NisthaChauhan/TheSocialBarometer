@@ -62,11 +62,22 @@ def load_or_create_model_tokenizer():
         model.save("models/sarcasm_model.h5")
         with open("models/tokenizer.pickle", "wb") as handle:
             pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)'''
-    model=tf.keras.models.load_model("models/sarcasm_model.h5")
-    with open("models/tokenizer.pickle", "rb") as handle:
-        tokenizer=pickle.load(handle)
-    print("MY MODEL Sarcasm model and tokenizer loaded!")
-    print(tokenizer)    
+    
+    model_path = "C:/Nistha/Insta/WORKING/instagram-analyzer/models/sarcasm_model.h5"
+    tokenizer_path = "C:/Nistha/Insta/WORKING/instagram-analyzer/models/tokenizer.pickle"
+    
+    try:
+        # Try to load model and tokenizer
+        model = tf.keras.models.load_model(model_path)
+        with open(tokenizer_path, "rb") as handle:
+            tokenizer = pickle.load(handle)
+        print(f"Sarcasm model and tokenizer loaded from {model_path}!")
+    except Exception as e:
+        print(f"Error loading model: {e}")
+        print("Creating new sarcasm model...")
+        model = create_sarcasm_model()
+        tokenizer = None  # You'll need to train or provide a tokenizer
+        
     return model, tokenizer
 
 def detect_sarcasm(url: str) -> dict:

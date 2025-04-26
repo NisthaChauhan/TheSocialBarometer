@@ -182,8 +182,9 @@ def cluster_images(image_paths):
         
         # Get relative path for frontend
         relative_path=image_paths[0].replace("\\", "/")
-        if relative_path.startswith("static/"):
-            relative_path="/" + relative_path
+        if "static/" in relative_path:
+            relative_path = "/" + relative_path.split("static/", 1)[1]
+
             
         return {
             "clusters": {
@@ -250,37 +251,62 @@ def analyze_images(url):
     Main function to analyze images from an Instagram post
     """
     try:
-        # Create output directory
-        output_dir="static/uploads/images"
+        # Get absolute paths
+        root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        static_dir = os.path.join(root_dir, 'static')
+        output_dir = os.path.join(static_dir, 'uploads', 'images')
         os.makedirs(output_dir, exist_ok=True)
         
+        print(f"Image output directory: {output_dir}")  # Debug print
+        
         # Download images
-        image_paths=download_images_from_instagram(url, output_dir)
+        image_paths = download_images_from_instagram(url, output_dir)
         
         if len(image_paths) == 0:
-            result ={
+            return {
                 "error": "No images found or post is a video",
                 "clusters": {},
                 "silhouette_score": None,
                 "category_distribution": {},
                 "image_count": 0
             }
-            print(result)
+
+        # Convert absolute paths to relative paths for frontend
+        relative_image_paths = []
+        for path in image_paths:
+            # Get the path relative to the static directory
+            rel_path = os.path.relpath(path, static_dir)
+            # Convert Windows path separators to URL format and add /static/ prefix
+            url_path = '/static/' + rel_path.replace('\\', '/')
+            relative_image_paths.append(url_path)
+
+
         # Cluster images
-        clustering_result=cluster_images(image_paths)
+        clustering_result = cluster_images(image_paths)
         
+        # Update image paths in the result to use relative URLs
+        if 'clusters' in clustering_result:
+            for category, images in clustering_result["clusters"].items():
+                for image in images:
+                    if 'path' in image:
+                        # Get the path relative to the static directory
+                        rel_path = os.path.relpath(image['path'], static_dir)
+                        # Convert Windows path separators to URL format and add /static/ prefix
+                        image['path'] = '/static/' + rel_path.replace('\\', '/')
+                        print(f"Converted image path: {image['path']}")  # Debug print
+        
+       
         # Add image count
-        clustering_result["image_count"]=len(image_paths)
+        clustering_result["image_count"] = len(image_paths)
         
-        print(clustering_result)
+        return clustering_result
     
     except Exception as e:
         print(f"Error analyzing images: {e}")
-        result= {
+        return {
             "error": str(e),
             "clusters": {},
             "silhouette_score": None,
             "category_distribution": {},
             "image_count": 0
         }
-        print(result)

@@ -16,7 +16,11 @@ def get_engagement(url: str) -> dict:
         
         # Get post data
         post = instaloader.Post.from_shortcode(loader.context, shortcode)
-        
+        '''print("POST username:\n",post.owner_username)
+        print(post.url)
+        print(post.likes)
+        print(post.comments)
+        print(post.caption)'''
         image_url = None
         try:
             if post.typename == 'GraphImage':

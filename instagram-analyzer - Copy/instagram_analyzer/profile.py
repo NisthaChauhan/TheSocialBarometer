@@ -17,20 +17,23 @@ def get_profile(url: str) -> dict:
         # Get post and profile data
         post = instaloader.Post.from_shortcode(loader.context, shortcode)
         profile = post.owner_profile
-        
+        print("PROFILE:\n", profile)
+        print("DICTIONARY\n", dir(profile))
+        print("PROFILE username:\n", profile.username)
+        print("PROFILE full name:\n", profile.full_name)
+        print("PROFILE followers:\n", profile.followers)
+
         # Save profile image
-        profile_pic_filename = f"static/uploads/profile_{profile.username}.jpg"
+        '''profile_pic_filename = f"static/uploads/profile_{profile.username}.jpg"
         try:
             analysis_functions.save_image_from_url(profile.profile_pic_url, profile_pic_filename)
         except Exception as e:
             print(f"Error saving profile image: {e}")
             profile_pic_filename = None
+        '''
         
-        # Format data with metrics
-        followers = profile.followers
-        followees = profile.followees
         
-        return {
+        '''result= {
             "username": profile.username,
             "full_name": profile.full_name,
             "followers": followers,
@@ -39,8 +42,15 @@ def get_profile(url: str) -> dict:
             "following_formatted": analysis_functions.format_large_number(followees),
             "bio": profile.biography,
             "profile_pic_url": profile.profile_pic_url,  # Return direct URL instead of local path
-            "profile_url": f"https://www.instagram.com/{profile.username}/"
+            "profile_pic": url,
+        }'''
+        result={
+            "username": profile.username,
+            "full_name": profile.full_name,
+            "followers": profile.followers,
         }
+        print("RESULT from profile :\n", result)
+        return result
     except Exception as e:
         print(f"Error fetching user profile: {e}")
         return {}

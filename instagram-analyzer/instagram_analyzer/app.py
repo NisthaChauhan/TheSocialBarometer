@@ -15,17 +15,28 @@ from instagram_analyzer.image_clustering import analyze_images
 from instagram_analyzer.engagement import get_engagement
 from instagram_analyzer.profile import get_profile
 
+# Set up absolute paths
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+template_dir = os.path.join(ROOT_DIR, 'templates')
+static_dir = os.path.join(ROOT_DIR, 'static')
 
-template_dir=os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'templates'))
-static_dir=os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'static'))
+# Create upload directory if it doesn't exist
+upload_dir = os.path.join(static_dir, 'uploads', 'images')
+os.makedirs(upload_dir, exist_ok=True)
 
-app=Flask(__name__, 
+app = Flask(__name__, 
            template_folder=template_dir,
-           static_folder=static_dir)
-app.config['UPLOAD_FOLDER']='instagram-analyzer/static/uploads'
-app.config['MAX_CONTENT_LENGTH']=16 * 1024 * 1024  
-# Ensure upload directory exists
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+           static_folder=static_dir,
+           static_url_path='/static')  # Explicitly set the static URL path
+
+# Configure upload folder
+app.config['UPLOAD_FOLDER'] = upload_dir
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+
+# Debug information
+print(f"Root directory: {ROOT_DIR}")
+print(f"Static directory: {static_dir}")
+print(f"Upload directory: {app.config['UPLOAD_FOLDER']}")
 
 @app.route('/')
 def index():
@@ -50,7 +61,7 @@ def analyze_post():
         sarcasm_data=detect_sarcasm(instagram_url)
         image_data=analyze_images(instagram_url)
         
-
+        print("Engagement data\n\n",engagement_data)
         # Combine all data
         result={
             'profile': profile_data,
@@ -60,7 +71,9 @@ def analyze_post():
             'images': image_data,
             'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
+
         
+        print("RESULT:\n\n", result)
         return jsonify(result)
     
     except Exception as e:

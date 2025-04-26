@@ -68,7 +68,6 @@ def extract_emoji_sentiment(emoji_text: str) -> Tuple[List, Optional[float]]:
     if not emoji_text:
         return [], None
     
-    # Import here to avoid circular imports
     from emosent import get_emoji_sentiment_rank, get_emoji_sentiment_rank_multiple
     
     try:
@@ -117,4 +116,5 @@ def calculate_engagement_rate(followers: int, likes: int, comments: int) -> floa
     """
     if followers == 0:
         return 0
-    return ((likes + comments) / followers) * 100
+    else:
+        return ((likes + comments) / followers) * 100

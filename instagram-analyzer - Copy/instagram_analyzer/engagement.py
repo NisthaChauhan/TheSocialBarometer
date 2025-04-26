@@ -16,7 +16,11 @@ def get_engagement(url: str) -> dict:
         
         # Get post data
         post = instaloader.Post.from_shortcode(loader.context, shortcode)
-        
+        '''print("POST username:\n",post.owner_username)
+        print(post.url)
+        print(post.likes)
+        print(post.comments)
+        print(post.caption)'''
         image_url = None
         try:
             if post.typename == 'GraphImage':
@@ -36,7 +40,7 @@ def get_engagement(url: str) -> dict:
             "comments_count": post.comments,
             "caption": post.caption if post.caption else "",
             "image_url": image_url,
-            "post_url": f"https://www.instagram.com/p/{shortcode}/"
+            "post_url": url
         }
     except Exception as e:
         print(f"Error fetching engagement metrics: {e}")

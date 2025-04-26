@@ -10,6 +10,8 @@ import pickle
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import tensorflow as tf
+import os
+
 
 # Sarcasm detection parameters
 vocab_size = 10000
@@ -21,20 +23,51 @@ num_epochs = 30
 training_size = 20000
 
 # Load the dataset and train the model
-file_path = "C:\Nistha\Insta\WORKING\Sarcasm\Sarcasm_Headlines_Dataset.json"
+file_path = r"C:\Nistha\Insta\WORKING\Sarcasm\Sarcasm_Headlines_Dataset.json"
 datastore = pd.read_json(file_path)
+'''
+    PREPROCESSING
+'''
+import re
+def preprocess_text(text):
+    # Remove HTML tags
+    text = re.sub(r'<.*?>', '', text)
+    # Remove non-alphanumeric characters
+    text = re.sub(r'[^\w\s]', '', text)
+    # Convert to lowercase
+    text = text.lower()
+    return text
+
+def augment_text(text):
+    # Simple augmentation: randomly drop words
+    words = text.split()
+    if len(words) <= 3:
+        return text
+    drop_idx = np.random.randint(0, len(words))
+    augmented = ' '.join(words[:drop_idx] + words[drop_idx+1:])
+    return augmented
+
 
 
 def train_test_split(datastore):
     sentences, labels = [], []
+    
     for _, row in datastore.iterrows():
-        sentences.append(row['headline'])
+        sentences = [preprocess_text(row['headline']) for _, row in datastore.iterrows()]
         labels.append(row['is_sarcastic'])
+    
     
     training_sentences = sentences[:training_size]
     testing_sentences = sentences[training_size:]
     training_labels = labels[:training_size]
     testing_labels = labels[training_size:]
+    
+    augmented_sentences = [augment_text(sentence) for sentence in training_sentences]
+    augmented_labels = training_labels.copy()
+
+    training_sentences.extend(augmented_sentences)
+    training_labels = np.concatenate([training_labels, augmented_labels])
+
 
     tokenizer = Tokenizer(num_words=vocab_size, oov_token=oov_tok)
     tokenizer.fit_on_texts(training_sentences)
@@ -49,13 +82,31 @@ def train_test_split(datastore):
 
 
 def sarcasm_detection_model():
+    # embedding dimensions and add regularization
+    embedding_dim = 128
     model = tf.keras.Sequential([
         tf.keras.layers.Embedding(vocab_size, embedding_dim, input_length=max_length),
-        tf.keras.layers.GlobalAveragePooling1D(),
-        tf.keras.layers.Dense(24, activation='relu'),
+        tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(128, return_sequences=True)),
+        tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(64)),
+        tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+        tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(1, activation='sigmoid')
     ])
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    early_stopping = tf.keras.callbacks.EarlyStopping(
+        monitor='val_loss',
+        patience=3,
+        restore_best_weights=True
+    )
+
+    model.fit(
+        training_padded, 
+        training_labels, 
+        epochs=num_epochs, 
+        validation_data=(testing_padded, testing_labels), 
+        callbacks=[early_stopping],
+        verbose=1
+    )   
     return model
 
 
@@ -93,10 +144,13 @@ def detect_sarcasm(caption, model, tokenizer):
 
 
 def save_model_and_tokenizer(model, tokenizer):
-    model.save("sarcasm_model.h5")
-    with open("tokenizer.pickle", "wb") as handle:
+    os.makedirs("C:/Nistha/Insta/WORKING/instagram-analyzer/models", exist_ok=True)
+    
+    # Save model and tokenizer in the same directory
+    model.save("C:/Nistha/Insta/WORKING/instagram-analyzer/models/sarcasm_model.h5")
+    with open("C:/Nistha/Insta/WORKING/instagram-analyzer/models/tokenizer.pickle", "wb") as handle:
         pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    print("Model and tokenizer saved!")
+    print("Model and tokenizer saved to C:/Nistha/Insta/WORKING/instagram-analyzer/models!")
 
 if __name__ == "__main__":
     print("Training sarcasm detection model...")

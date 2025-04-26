@@ -440,6 +440,21 @@
         <div id="report">
             <div class="date-time" id="reportDate">Generated on April 14, 2025 at 10:30 AM</div>
             
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             <!-- Profile Section -->
             <div class="card">
                 <div class="section-title"><i class="fas fa-user"></i> User Profile</div>
@@ -466,7 +481,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Post Section -->
             <div class="card">
                 <div class="section-title"><i class="fas fa-image"></i> Analyzed Post</div>
@@ -594,6 +609,40 @@
         </div>
     </div>
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Set the current date and time
@@ -621,17 +670,19 @@
                     body: JSON.stringify({ url: url })
                 })
                 .then(response => response.json())
+
                 .then(data => {
                     document.getElementById('loadingSection').style.display = 'none';
-                    
+                console.log("Received data:", data); // ✅ Debug output
                     if (data.error) {
                         alert('Error: ' + data.error);
                         return;
                     }
-                    
-                    // Update UI with real data from "data"
-                    updateReport(data); // You need to implement this function
+                
+                    console.log("Received data:", data); // ✅ Debug output
+                    updateReport(data); // ✅ Update UI
                 })
+                
                 .catch(error => {
                     document.getElementById('loadingSection').style.display = 'none';
                     alert('Error: ' + error.message);
@@ -654,7 +705,7 @@
                     document.getElementById('following').textContent = data.profile.following_formatted || '0';
                     document.getElementById('posts').textContent = data.profile.posts_count || '0';
                     if (document.getElementById('profileImage')) {
-                        document.getElementById('profileImage').src = data.profile.profile_pic_url || '/api/placeholder/150/150';
+                        document.getElementById('profileImage').src = data.profile.profile_pic || '/api/placeholder/150/150';
                     }
                 }
             
@@ -667,7 +718,23 @@
                         document.getElementById('postCaption').textContent = data.post.caption || 'No caption available';
                     }
                 }
-            
+                // Engagement Section
+                if (data.post) {
+                    const likes = data.post.likes_count || 0;
+                    const comments = data.post.comments_count || 0;
+                    const engagement = data.post.engagement_rate || 0;
+
+                    if (document.getElementById('likesCount')) {
+                        document.getElementById('likesCount').textContent = likes.toLocaleString();
+                    }
+                    if (document.getElementById('commentsCount')) {
+                        document.getElementById('commentsCount').textContent = comments.toLocaleString();
+                    }
+                    if (document.getElementById('engagementRate')) {
+                        document.getElementById('engagementRate').textContent = `${engagement.toFixed(1)}%`;
+                    }
+                }
+
                 // Sentiment Analysis
                 if (data.sentiment) {
                     if (data.sentiment.text_sentiment) {
@@ -713,52 +780,67 @@
                 // Sarcasm Detection
                 if (data.sarcasm) {
                     try {
-                        // Update sarcasm result text
+                        const score = data.sarcasm.score;
+                        let label = "";
+                        let interpretation = "";
+                
+                        if (score > 0.9) {
+                            label = "Max-Level Sarcasm";
+                            interpretation = "This caption is basically screaming sarcasm. It’s giving ✨drama✨, irony, and all the shade.";
+                        } else if (score > 0.8) {
+                            label = "Super Sarcastic";
+                            interpretation = "Yeah, this one’s *clearly* sarcastic. Like, it didn’t even try to hide it.";
+                        } else if (score > 0.7) {
+                            label = "Pretty Sarcastic";
+                            interpretation = "Strong sarcasm vibes here. Most people will catch the snark instantly.";
+                        } else if (score > 0.6) {
+                            label = "Kinda Sarcastic";
+                            interpretation = "You can tell it’s sarcastic, but it’s not going overboard. Just a lil sass.";
+                        } else if (score > 0.5) {
+                            label = "Low-Key Sarcastic";
+                            interpretation = "There's a sarcastic undertone here—like a side-eye in text form.";
+                        } else if (score > 0.4) {
+                            label = "Casual Sarcasm";
+                            interpretation = "Might be sarcasm, might just be passive-aggressive. Either way, it’s subtle.";
+                        } else if (score > 0.3) {
+                            label = "Tiny Bit Sarcastic";
+                            interpretation = "There's a lil sprinkle of sarcasm, but it’s barely there.";
+                        } else if (score > 0.2) {
+                            label = "Microdose of Sarcasm";
+                            interpretation = "Blink and you’ll miss it. Just a trace of sarcasm, if any.";
+                        } else if (score > 0.1) {
+                            label = "Basically Genuine (But Who Knows)";
+                            interpretation = "Seems real, but there’s a sliver of sass peeking through.";
+                        } else {
+                            label = "Totally Genuine";
+                            interpretation = "No sarcasm here—just vibes and sincerity. 🫶";
+                        }
+                
                         const sarcasmElement = document.getElementById('sarcasmResult');
                         if (sarcasmElement) {
-                            sarcasmElement.textContent = data.sarcasm.is_sarcastic ? "Sarcastic" : "Not Sarcastic";
+                            sarcasmElement.textContent = label;
                         }
-
-                        // Update sarcasm score
+                
                         const sarcasmScoreElement = document.getElementById('sarcasmScore');
                         if (sarcasmScoreElement) {
-                            sarcasmScoreElement.textContent = (data.sarcasm.score || 0).toFixed(2);
+                            sarcasmScoreElement.textContent = score.toFixed(2);
                         }
-
-                        // Update progress bar width
-                        const progressBar = document.querySelector('#sarcasmResult').closest('.metric-card').querySelector('.progress-value');
-                        if (progressBar) {
-                            progressBar.style.width = `${parseFloat(data.sarcasm.score || 0) * 100}%`;
+                
+                        const progressBarEl = sarcasmElement?.closest('.metric-card')?.querySelector('.progress-value');
+                        if (progressBarEl) {
+                            progressBarEl.style.width = `${score * 100}%`;
                         }
-
-                        // Update charts if they exist
-                        const sarcasmChart = Object.values(Chart.instances).find(chart => chart.canvas.id === 'sarcasmChart');
-                        if (sarcasmChart && typeof data.sarcasm.score === 'number') {
-                            const sarcasmScore = data.sarcasm.score;
-                            const notSarcastic = 100 - (sarcasmScore * 100);
-                            
-                            let mildSarcastic = 0;
-                            let moderateSarcastic = 0;
-                            let highlySarcastic = 0;
-                            
-                            if (sarcasmScore < 0.33) {
-                                mildSarcastic = sarcasmScore * 100;
-                            } else if (sarcasmScore < 0.66) {
-                                mildSarcastic = 33;
-                                moderateSarcastic = (sarcasmScore - 0.33) * 100;
-                            } else {
-                                mildSarcastic = 33;
-                                moderateSarcastic = 33;
-                                highlySarcastic = (sarcasmScore - 0.66) * 100;
-                            }
-                            
-                            sarcasmChart.data.datasets[0].data = [notSarcastic, mildSarcastic, moderateSarcastic, highlySarcastic];
-                            sarcasmChart.update();
+                
+                        const interpretationEl = document.querySelector('.sarcasm-section .grid-2 .metric-card:last-child p');
+                        if (interpretationEl) {
+                            interpretationEl.textContent = interpretation;
                         }
+                
                     } catch (error) {
-                        console.error('Error updating sarcasm UI:', error);
+                        console.error("Error updating sarcasm UI:", error);
                     }
                 }
+                
 
                 // Image Clustering Section
                 if (data.images && data.images.clusters) {
@@ -791,7 +873,8 @@
                         
                         const imagesDiv = document.createElement('div');
                         imagesDiv.className = 'cluster-images';
-                        
+                        console.log("Image URL:", imageUrl);
+
                         cluster.images.forEach(imageUrl => {
                             const img = document.createElement('img');
                             img.src = imageUrl;
