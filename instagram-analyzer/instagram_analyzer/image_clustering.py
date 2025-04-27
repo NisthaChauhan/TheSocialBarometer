@@ -11,6 +11,7 @@ from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.imagenet_utils import decode_predictions
 from sklearn.metrics import silhouette_score
 import analysis_functions
+from datetime import datetime
 
 # Initialize ResNet models
 model=None
@@ -57,46 +58,69 @@ def download_images_from_instagram(url, output_dir):
     """
     Download images from an Instagram post
     """
-    loader=instaloader.Instaloader()
-    
     try:
+        print(f"Attempting to download images from URL: {url}")
+        print(f"Output directory: {output_dir}")
+        
+        # Initialize Instaloader
+        loader = instaloader.Instaloader()
+        
         # Extract shortcode from URL
         if '?' in url:
-            url=url.split('?')[0]
-        shortcode=url.split('/')[-2]
+            url = url.split('?')[0]
+        shortcode = url.split('/')[-2]
+        print(f"Extracted shortcode: {shortcode}")
         
-        # Get post data
-        post=instaloader.Post.from_shortcode(loader.context, shortcode)
-        
-        # Create output directory if needed
-        os.makedirs(output_dir, exist_ok=True)
-        
-        images=[]
-        
-        # Handle single image or carousel
-        if post.typename == 'GraphImage':
-            img_url=post.url
-            img_path=os.path.join(output_dir, f"{shortcode}_1.jpg")
+        try:
+            # Get post data
+            post = instaloader.Post.from_shortcode(loader.context, shortcode)
+            print(f"Successfully retrieved post. Type: {post.typename}")
             
-            if not os.path.exists(img_path):
-                analysis_functions.save_image_from_url(img_url, img_path)
-                
-            images.append(img_path)
+            # Create output directory if needed
+            os.makedirs(output_dir, exist_ok=True)
             
-        elif post.typename == 'GraphSidecar':
-            for i, node in enumerate(post.get_sidecar_nodes()):
-                img_url=node.display_url
-                img_path=os.path.join(output_dir, f"{shortcode}_{i+1}.jpg")
+            images = []
+            
+            # Handle single image or carousel
+            if post.typename == 'GraphImage':
+                print("Processing single image post")
+                img_url = post.url
+                img_path = os.path.join(output_dir, f"{shortcode}_1.jpg")
                 
                 if not os.path.exists(img_path):
+                    print(f"Downloading image to: {img_path}")
                     analysis_functions.save_image_from_url(img_url, img_path)
-                    
+                    print("Single image saved successfully")
+                else:
+                    print("Image already exists, skipping download")
                 images.append(img_path)
                 
-        return images
-    
+            elif post.typename == 'GraphSidecar':
+                print("Processing carousel post")
+                for i, node in enumerate(post.get_sidecar_nodes()):
+                    img_url = node.display_url
+                    img_path = os.path.join(output_dir, f"{shortcode}_{i+1}.jpg")
+                    
+                    if not os.path.exists(img_path):
+                        print(f"Downloading image {i+1} to: {img_path}")
+                        analysis_functions.save_image_from_url(img_url, img_path)
+                        print(f"Image {i+1} saved successfully")
+                    else:
+                        print(f"Image {i+1} already exists, skipping download")
+                    images.append(img_path)
+            else:
+                print(f"Unsupported post type: {post.typename}")
+                return []
+            
+            print(f"Successfully processed {len(images)} images")
+            return images
+            
+        except instaloader.exceptions.InstaloaderException as e:
+            print(f"Instaloader error: {str(e)}")
+            return []
+            
     except Exception as e:
-        print(f"Error downloading images: {e}")
+        print(f"Error in download_images_from_instagram: {str(e)}")
         return []
 
 def extract_features(img_path):
@@ -111,6 +135,7 @@ def extract_features(img_path):
         img_array=np.expand_dims(img_array, axis=0)
         img_array=preprocess_input(img_array)
         features=model.predict(img_array)
+        print("Feature shape:", features.shape)
         return features[0]
     except Exception as e:
         print(f"Error extracting features: {e}")
@@ -182,9 +207,8 @@ def cluster_images(image_paths):
         
         # Get relative path for frontend
         relative_path=image_paths[0].replace("\\", "/")
-        if "static/" in relative_path:
-            relative_path = "/" + relative_path.split("static/uploads/images", 1)[1]
-
+        if relative_path.startswith("instagram-analyzer/static/"):
+            relative_path="/" + relative_path
             
         return {
             "clusters": {
@@ -227,9 +251,13 @@ def cluster_images(image_paths):
             image_categories[main_category]=[]
         
         # Get relative path for frontend
-        relative_path=img_path.replace("\\", "/")
-        if relative_path.startswith("static/"):
-            relative_path="/" + relative_path
+        relative_path = img_path.replace("\\", "/")
+        # Remove any parent directory references and ensure path starts with /static/
+        if "static" in relative_path:
+            parts = relative_path.split("static/")
+            relative_path = "/static/" + parts[-1]
+        else:
+            relative_path = "/static/" + relative_path
             
         image_categories[main_category].append({
             "path": relative_path,
@@ -246,63 +274,139 @@ def cluster_images(image_paths):
         "category_distribution": category_distribution
     }
 
-def analyze_images(url):
+def analyze_images(post_url=None, direct_image_url=None):
     """
-    Main function to analyze images from an Instagram post
+    Main function to analyze images from an Instagram post or direct image URL
     """
     try:
-        # Get absolute paths
-        root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-        static_dir = os.path.join(root_dir, 'static')
-        output_dir = os.path.join(static_dir, 'uploads', 'images')
+        # Create output directory
+        output_dir = os.path.join("static", "uploads", "images")
         os.makedirs(output_dir, exist_ok=True)
-        
-        print(f"Image output directory: {output_dir}")  # Debug print
-        
-        # Download images
-        image_paths = download_images_from_instagram(url, output_dir)
-        
-        if len(image_paths) == 0:
-            return {
-                "error": "No images found or post is a video",
+        print(f"Created output directory: {output_dir}")
+
+        image_paths = []
+
+        # First try direct image URL if provided
+        if direct_image_url:
+            print(f"Attempting to download direct image from URL: {direct_image_url}")
+            try:
+                # Generate a unique filename based on timestamp
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"direct_image_{timestamp}.jpg"
+                full_path = os.path.join(output_dir, filename)
+                
+                # Download the image
+                response = requests.get(direct_image_url, stream=True)
+                if response.status_code == 200:
+                    with open(full_path, 'wb') as f:
+                        for chunk in response.iter_content(chunk_size=8192):
+                            f.write(chunk)
+                    print(f"Successfully downloaded direct image to: {full_path}")
+                    # Store the frontend-accessible path
+                    frontend_path = f"/static/uploads/images/{filename}"
+                    print(f"Frontend path for direct image: {frontend_path}")
+                    image_paths.append(frontend_path)
+                else:
+                    print(f"Failed to download direct image. Status code: {response.status_code}")
+            except Exception as e:
+                print(f"Error downloading direct image: {str(e)}")
+
+        # If no direct image or direct download failed, try Instagram post
+        if not image_paths and post_url:
+            print(f"Attempting to download images from Instagram post: {post_url}")
+            try:
+                # Initialize Instaloader
+                loader = instaloader.Instaloader()
+                
+                # Extract shortcode from URL
+                if '?' in post_url:
+                    post_url = post_url.split('?')[0]
+                shortcode = post_url.split('/')[-2]
+                print(f"Extracted shortcode: {shortcode}")
+                
+                # Get post data
+                post = instaloader.Post.from_shortcode(loader.context, shortcode)
+                print(f"Successfully retrieved post. Type: {post.typename}")
+                
+                # Handle single image or carousel
+                if post.typename == 'GraphImage':
+                    print("Processing single image post")
+                    img_url = post.url
+                    filename = f"{shortcode}_1.jpg"
+                    full_path = os.path.join(output_dir, filename)
+                    
+                    if not os.path.exists(full_path):
+                        print(f"Downloading image to: {full_path}")
+                        response = requests.get(img_url, stream=True)
+                        if response.status_code == 200:
+                            with open(full_path, 'wb') as f:
+                                for chunk in response.iter_content(chunk_size=8192):
+                                    f.write(chunk)
+                            print("Single image saved successfully")
+                        else:
+                            print(f"Failed to download image. Status code: {response.status_code}")
+                    else:
+                        print("Image already exists, skipping download")
+                    # Store the frontend-accessible path
+                    frontend_path = f"/static/uploads/images/{filename}"
+                    print(f"Frontend path for single image: {frontend_path}")
+                    image_paths.append(frontend_path)
+                    
+                elif post.typename == 'GraphSidecar':
+                    print("Processing carousel post")
+                    for i, node in enumerate(post.get_sidecar_nodes()):
+                        img_url = node.display_url
+                        filename = f"{shortcode}_{i+1}.jpg"
+                        full_path = os.path.join(output_dir, filename)
+                        
+                        if not os.path.exists(full_path):
+                            print(f"Downloading image {i+1} to: {full_path}")
+                            response = requests.get(img_url, stream=True)
+                            if response.status_code == 200:
+                                with open(full_path, 'wb') as f:
+                                    for chunk in response.iter_content(chunk_size=8192):
+                                        f.write(chunk)
+                                print(f"Image {i+1} saved successfully")
+                            else:
+                                print(f"Failed to download image {i+1}. Status code: {response.status_code}")
+                        else:
+                            print(f"Image {i+1} already exists, skipping download")
+                        # Store the frontend-accessible path
+                        frontend_path = f"/static/uploads/images/{filename}"
+                        print(f"Frontend path for carousel image {i+1}: {frontend_path}")
+                        image_paths.append(frontend_path)
+                else:
+                    print(f"Unsupported post type: {post.typename}")
+                
+            except Exception as e:
+                print(f"Error downloading from Instagram post: {str(e)}")
+
+        if not image_paths:
+            result = {
+                "error": "No images found or could not download",
                 "clusters": {},
                 "silhouette_score": None,
                 "category_distribution": {},
                 "image_count": 0
             }
+            print("No images available for analysis:", result)
+            return result
 
-        # Convert absolute paths to relative paths for frontend
-        relative_image_paths = []
-        for path in image_paths:
-            # Get the path relative to the static directory
-            rel_path = os.path.relpath(path, static_dir)
-            # Convert Windows path separators to URL format and add /static/ prefix
-            url_path = '/static/' + rel_path.replace('\\', '/')
-            relative_image_paths.append(url_path)
+        # Create a simple result structure with the image paths
+        result = {
+            "image_count": len(image_paths),
+            "images": image_paths,
+            "category_distribution": {"Post Images": len(image_paths)},
+            "clusters": {
+                "Post Images": [{"path": path} for path in image_paths]
+            }
+        }
 
+        print("Final analysis result:", result)
+        return result
 
-        # Cluster images
-        clustering_result = cluster_images(image_paths)
-        
-        # Update image paths in the result to use relative URLs
-        if 'clusters' in clustering_result:
-            for category, images in clustering_result["clusters"].items():
-                for image in images:
-                    if 'path' in image:
-                        # Get the path relative to the static directory
-                        rel_path = os.path.relpath(image['path'], static_dir)
-                        # Convert Windows path separators to URL format and add /static/ prefix
-                        image['path'] = '/static/' + rel_path.replace('\\', '/')
-                        print(f"Converted image path: {image['path']}")  # Debug print
-        
-       
-        # Add image count
-        clustering_result["image_count"] = len(image_paths)
-        
-        return clustering_result
-    
     except Exception as e:
-        print(f"Error analyzing images: {e}")
+        print(f"Error analyzing images: {str(e)}")
         return {
             "error": str(e),
             "clusters": {},
@@ -310,3 +414,4 @@ def analyze_images(url):
             "category_distribution": {},
             "image_count": 0
         }
+    

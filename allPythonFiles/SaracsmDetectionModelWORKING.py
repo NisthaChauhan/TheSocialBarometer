@@ -21,7 +21,7 @@ num_epochs = 30
 training_size = 20000
 
 # Load the dataset and train the model
-file_path = "C:\Nistha\Insta\WORKING\Sarcasm\Sarcasm_Headlines_Dataset.json"
+file_path = r"C:\Nistha\Insta\WORKING\Sarcasm\Sarcasm_Headlines_Dataset.json"
 datastore = pd.read_json(file_path)
 
 

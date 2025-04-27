@@ -1,8 +1,5 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 import os
-import json
-from werkzeug.utils import secure_filename
-import pandas as pd
 from datetime import datetime
 import sys
 
@@ -17,26 +14,25 @@ from instagram_analyzer.profile import get_profile
 
 # Set up absolute paths
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+print(f"Root directory: {ROOT_DIR}")
+
+# Configure paths
 template_dir = os.path.join(ROOT_DIR, 'templates')
 static_dir = os.path.join(ROOT_DIR, 'static')
-
-# Create upload directory if it doesn't exist
 upload_dir = os.path.join(static_dir, 'uploads', 'images')
+
+# Create necessary directories
 os.makedirs(upload_dir, exist_ok=True)
 
 app = Flask(__name__, 
            template_folder=template_dir,
            static_folder=static_dir,
-           static_url_path='/static')  # Explicitly set the static URL path
-
-# Configure upload folder
-app.config['UPLOAD_FOLDER'] = upload_dir
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+           static_url_path='/static')
 
 # Debug information
-print(f"Root directory: {ROOT_DIR}")
+print(f"Template directory: {template_dir}")
 print(f"Static directory: {static_dir}")
-print(f"Upload directory: {app.config['UPLOAD_FOLDER']}")
+print(f"Upload directory: {upload_dir}")
 
 @app.route('/')
 def index():
@@ -48,22 +44,45 @@ def analyze_post():
     Main API endpoint to analyze an Instagram post
     """
     try:
-        data=request.get_json()
-        instagram_url=data.get('url', '')
+        print("Received analyze request")
+        data = request.get_json()
+        print("Request data:", data)
         
+        instagram_url = data.get('url', '')
+        print("Instagram URL:", instagram_url)
+
         if not instagram_url or not ('instagram.com/p/' in instagram_url or 'instagram.com/reel/' in instagram_url):
+            print("Invalid URL format")
             return jsonify({'error': 'Invalid Instagram URL'}), 400
+
+        print(f"Analyzing post URL: {instagram_url}")
         
         # Run all analyses
-        profile_data=get_profile(instagram_url)
-        engagement_data=get_engagement(instagram_url)
-        sentiment_data=analyze_sentiment(instagram_url)
-        sarcasm_data=detect_sarcasm(instagram_url)
-        image_data=analyze_images(instagram_url)
+        print("Getting profile data...")
+        profile_data = get_profile(instagram_url)
+        print("Profile data:", profile_data)
         
-        print("Engagement data\n\n",engagement_data)
+        print("Getting engagement data...")
+        engagement_data = get_engagement(instagram_url)
+        print("Engagement data:", engagement_data)
+        
+        print("Getting sentiment data...")
+        sentiment_data = analyze_sentiment(instagram_url)
+        print("Sentiment data:", sentiment_data)
+        
+        print("Getting sarcasm data...")
+        sarcasm_data = detect_sarcasm(instagram_url)
+        print("Sarcasm data:", sarcasm_data)
+        
+        print("Getting image data...")
+        image_data = analyze_images(
+            post_url=instagram_url,
+            direct_image_url=engagement_data.get('image_url')
+        )
+        print("Image data:", image_data)
+
         # Combine all data
-        result={
+        result = {
             'profile': profile_data,
             'post': engagement_data,
             'sentiment': sentiment_data,
@@ -72,13 +91,17 @@ def analyze_post():
             'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
 
-        
-        print("RESULT:\n\n", result)
+        print("Sending response:", result)
         return jsonify(result)
     
     except Exception as e:
         print(f"Error analyzing post: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+# Route to serve uploaded images
+@app.route('/static/uploads/images/<path:filename>')
+def serve_uploaded_image(filename):
+    return send_from_directory(upload_dir, filename)
 
 if __name__ == '__main__':
     app.run(debug=True)

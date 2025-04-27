@@ -593,681 +593,546 @@
             
         </div>
     </div>
+    
     <script>
-    // Add this script at the bottom of your index.html file, just before closing body tag
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Set the current date and time
-    updateReportDate();
-    
-    // Initialize charts
-    let engagementChart, sentimentChart, sarcasmChart;
-    createCharts();
-    
-    // Analyze button
-    document.getElementById('analyzeButton').addEventListener('click', function() {
-        const url = document.getElementById('instagramUrl').value.trim();
-        
-        if (!url.includes('instagram.com/p/') && !url.includes('instagram.com/reel/')) {
-            alert('Please enter a valid Instagram post URL');
-            return;
-        }
-        
-        // Show loading
-        document.getElementById('loadingSection').style.display = 'block';
-        
-        // Make API call to analyze the Instagram post
-        fetch('/api/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: url })
-        })
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('loadingSection').style.display = 'none';
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set the current date and time
+            const now = new Date();
+            const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+            const timeOptions = { hour: '2-digit', minute: '2-digit' };
+            document.getElementById('reportDate').textContent = `Generated on ${now.toLocaleDateString('en-US', dateOptions)} at ${now.toLocaleTimeString('en-US', timeOptions)}`;
             
-            if (data.error) {
-                alert('Error: ' + data.error);
-                return;
-            }
+            // Initialize charts
+            let engagementChart, sentimentChart, sarcasmChart;
+            createCharts();
             
-            console.log("Received data:", data);
-            updateReport(data);
-        })
-        .catch(error => {
-            document.getElementById('loadingSection').style.display = 'none';
-            alert('Error: ' + error.message);
-        });
-    });
-    
-    // Helper function to fix image paths
-    function fixImagePath(path) {
-        if (!path) return '';
-        
-        // Extract just the filename from the path
-        const filename = path.split('/').pop();
-        
-        // Return a direct path to uploads folder\
-        const filepath = "./instagram-analyzer/static/uploads/images/" ;
-        return `${filepath}/${filename}`;
-    }
-    
-    // Update report date
-    function updateReportDate() {
-        const now = new Date();
-        const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-        const timeOptions = { hour: '2-digit', minute: '2-digit' };
-        document.getElementById('reportDate').textContent = 
-            `Generated on ${now.toLocaleDateString('en-US', dateOptions)} at ${now.toLocaleTimeString('en-US', timeOptions)}`;
-    }
-    
-    // Update report with data
-    function updateReport(data) {
-        // Update the date
-        updateReportDate();
-    
-        // Profile Section
-        if (data.profile) {
-            document.getElementById('profileName').textContent = data.profile.full_name || 'N/A';
-            document.getElementById('profileUsername').textContent = `@${data.profile.username || 'N/A'}`;
-            
-            // Format followers count
-            const followers = data.profile.followers;
-            let followersText = 'N/A';
-            if (followers !== undefined) {
-                if (followers >= 1000000) {
-                    followersText = (followers / 1000000).toFixed(1) + 'M';
-                } else if (followers >= 1000) {
-                    followersText = (followers / 1000).toFixed(1) + 'K';
-                } else {
-                    followersText = followers.toString();
-                }
-            }
-            
-            document.getElementById('followers').textContent = followersText;
-            
-            // Set default values for missing data
-            document.getElementById('following').textContent = data.profile.following_formatted || 'N/A';
-            document.getElementById('posts').textContent = data.profile.posts_count || 'N/A';
-            
-            // Set profile bio if available
-            const bioElement = document.getElementById('profileBio');
-            if (bioElement) {
-                bioElement.textContent = data.profile.bio || `${data.profile.full_name}'s Instagram profile`;
-            }
-            
-            // Set profile image if available
-            const profileImageElement = document.getElementById('profileImage');
-            if (profileImageElement) {
-                if (data.profile.profile_pic) {
-                    profileImageElement.src = data.profile.profile_pic;
-                } else {
-                    profileImageElement.src = 'https://via.placeholder.com/150';
-                }
-            }
-        }
-    
-        // Post Section
-        if (data.post) {
-            // Set post image - directly use the image URL from the response
-            const postImageElement = document.getElementById('postImage');
-            
-
-            if (postImageElement && data.post.image_url) {
-                debugInstagramImage(data.post.image_url);
-
-                // Use the Instagram image URL directly
-                console.log("Setting Instagram image URL:", data.post.image_url);
-                postImageElement.src = data.post.image_url;
+            // Analyze button
+            document.getElementById('analyzeButton').addEventListener('click', function() {
+                console.log("Analyze button clicked");
+                const url = document.getElementById('instagramUrl').value.trim();
+                console.log("URL entered:", url);
                 
-                // Add crossorigin attribute to handle CORS issues
-                postImageElement.crossOrigin = "anonymous";
-                
-                // Simple error handling
-                postImageElement.onerror = function() {
-                    console.log("Instagram image failed to load");
-                    const container = this.parentElement;
-                    const errorMsg = document.createElement('div');
-                    errorMsg.textContent = "Image could not be loaded";
-                    errorMsg.style.padding = "20px";
-                    errorMsg.style.textAlign = "center";
-                    errorMsg.style.color = "#666";
-                    container.replaceChild(errorMsg, this);
-                };
-            }
-            
-            // Set post caption
-            const postCaptionElement = document.getElementById('postCaption');
-            if (postCaptionElement) {
-                postCaptionElement.textContent = data.post.caption || 'No caption available';
-            }
-            
-            // Engagement Section
-            const likes = data.post.likes_count || 0;
-            const comments = data.post.comments_count || 0;
-            
-            // Calculate engagement rate based on followers
-            let engagementRate = 0;
-            if (data.profile && data.profile.followers && data.profile.followers > 0) {
-                engagementRate = ((likes + comments) / data.profile.followers) * 100;
-            }
-            
-            // Format numbers for display
-            const likesElement = document.getElementById('likesCount');
-            if (likesElement) {
-                likesElement.textContent = likes.toLocaleString();
-            }
-            
-            const commentsElement = document.getElementById('commentsCount');
-            if (commentsElement) {
-                commentsElement.textContent = comments.toLocaleString();
-            }
-            
-            const engagementElement = document.getElementById('engagementRate');
-            if (engagementElement) {
-                engagementElement.textContent = `${engagementRate.toFixed(2)}%`;
-            }
-        }
-
-        // Sentiment Analysis
-        if (data.sentiment) {
-            // Text sentiment
-            if (data.sentiment.text_sentiment) {
-                const textSentimentElement = document.getElementById('textSentiment');
-                const textScoreElement = document.getElementById('textSentimentScore');
-                
-                if (textSentimentElement) {
-                    textSentimentElement.textContent = data.sentiment.text_sentiment.label || 'N/A';
+                if (!url.includes('instagram.com/p/') && !url.includes('instagram.com/reel/')) {
+                    console.log("Invalid URL format");
+                    alert('Please enter a valid Instagram URL');
+                    return;
                 }
                 
-                if (textScoreElement) {
-                    const score = data.sentiment.text_sentiment.score || 0;
-                    textScoreElement.textContent = score.toFixed(2);
+                // Show loading
+                console.log("Showing loading section");
+                document.getElementById('loadingSection').style.display = 'block';
+                
+                // Make API call to analyze the Instagram post
+                console.log("Making API call to /api/analyze");
+                fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                })
+                .then(response => {
+                    console.log("API response status:", response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("API response data:", data);
+                    document.getElementById('loadingSection').style.display = 'none';
                     
-                    // Update progress bar
-                    const textProgressElement = textSentimentElement.parentElement.querySelector('.progress-value');
-                    if (textProgressElement) {
-                        textProgressElement.style.width = `${Math.abs(score) * 100}%`;
-                        
-                        // Adjust color based on sentiment
-                        if (score < 0) {
-                            textProgressElement.style.background = 'linear-gradient(45deg, #ef4444, #dc2626)';
-                        } else {
-                            textProgressElement.style.background = 'linear-gradient(45deg, #22c55e, #16a34a)';
-                        }
+                    if (data.error) {
+                        console.error("API returned error:", data.error);
+                        alert('Error: ' + data.error);
+                        return;
                     }
-                }
-            }
-            
-            // Emoji sentiment
-            if (data.sentiment.emoji_sentiment) {
-                const emojiSentimentElement = document.getElementById('emojiSentiment');
-                const emojiScoreElement = document.getElementById('emojiSentimentScore');
-                
-                if (emojiSentimentElement) {
-                    emojiSentimentElement.textContent = data.sentiment.emoji_sentiment.label || 'N/A';
-                }
-                
-                if (emojiScoreElement) {
-                    const score = data.sentiment.emoji_sentiment.score || 0;
-                    emojiScoreElement.textContent = score.toFixed(2);
                     
-                    // Update progress bar
-                    const emojiProgressElement = emojiSentimentElement.parentElement.querySelector('.progress-value');
-                    if (emojiProgressElement) {
-                        emojiProgressElement.style.width = `${Math.abs(score) * 100}%`;
-                        
-                        // Adjust color based on sentiment
-                        if (score < 0) {
-                            emojiProgressElement.style.background = 'linear-gradient(45deg, #ef4444, #dc2626)';
-                        } else {
-                            emojiProgressElement.style.background = 'linear-gradient(45deg, #22c55e, #16a34a)';
-                        }
-                    }
-                }
-            }
-            
-            // Combined sentiment
-            if (data.sentiment.combined_sentiment) {
-                const combinedSentimentElement = document.getElementById('combinedSentiment');
-                const combinedScoreElement = document.getElementById('combinedSentimentScore');
-                
-                if (combinedSentimentElement) {
-                    combinedSentimentElement.textContent = data.sentiment.combined_sentiment.label || 'N/A';
-                }
-                
-                if (combinedScoreElement) {
-                    const score = data.sentiment.combined_sentiment.score || 0;
-                    combinedScoreElement.textContent = score.toFixed(2);
-                    
-                    // Update progress bar
-                    const combinedProgressElement = combinedSentimentElement.parentElement.querySelector('.progress-value');
-                    if (combinedProgressElement) {
-                        combinedProgressElement.style.width = `${Math.abs(score) * 100}%`;
-                        
-                        // Adjust color based on sentiment
-                        if (score < 0) {
-                            combinedProgressElement.style.background = 'linear-gradient(45deg, #ef4444, #dc2626)';
-                        } else {
-                            combinedProgressElement.style.background = 'linear-gradient(45deg, #22c55e, #16a34a)';
-                        }
-                    }
-                }
-            }
-        }
-
-        // Sarcasm Detection
-        if (data.sarcasm) {
-            const sarcasmElement = document.getElementById('sarcasmResult');
-            const sarcasmScoreElement = document.getElementById('sarcasmScore');
-            const sarcasmInterpretationElement = document.getElementById('sarcasmInterpretation');
-            
-            if (sarcasmElement && data.sarcasm.result) {
-                sarcasmElement.textContent = data.sarcasm.result;
-            }
-            
-            if (sarcasmScoreElement && data.sarcasm.score !== undefined) {
-                const score = data.sarcasm.score;
-                sarcasmScoreElement.textContent = score.toFixed(2);
-                
-                // Update progress bar
-                const progressBarElement = sarcasmElement.parentElement.querySelector('.progress-value');
-                if (progressBarElement) {
-                    progressBarElement.style.width = `${score * 100}%`;
-                    
-                    // Adjust color based on sarcasm level
-                    if (score > 0.7) {
-                        progressBarElement.style.background = 'linear-gradient(45deg, #ef4444, #dc2626)';
-                    } else if (score > 0.3) {
-                        progressBarElement.style.background = 'linear-gradient(45deg, #f59e0b, #d97706)';
-                    } else {
-                        progressBarElement.style.background = 'linear-gradient(45deg, #22c55e, #16a34a)';
-                    }
-                }
-            }
-            
-            if (sarcasmInterpretationElement && data.sarcasm.interpretation) {
-                sarcasmInterpretationElement.textContent = data.sarcasm.interpretation;
-            }
-        }
-
-        // Image Clustering Section
-        if (data.images) {
-            const imageCategories = document.getElementById('imageCategories');
-            const clusterContainer = document.getElementById('clusterContainer');
-            
-            // Clear existing content
-            if (imageCategories) imageCategories.innerHTML = '';
-            if (clusterContainer) clusterContainer.innerHTML = '';
-            
-            // Add image categories/tags from category_distribution
-            if (data.images.category_distribution && typeof data.images.category_distribution === 'object') {
-                const categories = Object.keys(data.images.category_distribution);
-                categories.forEach(category => {
-                    const tag = document.createElement('span');
-                    tag.className = 'tag';
-                    tag.textContent = category;
-                    imageCategories.appendChild(tag);
+                    updateReport(data);
+                })
+                .catch(error => {
+                    console.error("API call failed:", error);
+                    document.getElementById('loadingSection').style.display = 'none';
+                    alert('Error: ' + error.message);
                 });
-            }
+            });
             
-            // Process clusters from the API
-            if (data.images.clusters && typeof data.images.clusters === 'object') {
-                const clusterNames = Object.keys(data.images.clusters);
-                
-                clusterNames.forEach(clusterName => {
-                    const clusterItems = data.images.clusters[clusterName];
-                    if (!Array.isArray(clusterItems) || clusterItems.length === 0) return;
+            function updateReport(data) {
+                // Update the date
+                const now = new Date();
+                const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+                const timeOptions = { hour: '2-digit', minute: '2-digit' };
+                document.getElementById('reportDate').textContent = `Generated on ${now.toLocaleDateString('en-US', dateOptions)} at ${now.toLocaleTimeString('en-US', timeOptions)}`;
+            
+                // Profile Section
+                if (data.profile) {
+                    document.getElementById('profileName').textContent = data.profile.full_name || 'N/A';
+                    document.getElementById('profileUsername').textContent = `@${data.profile.username || 'N/A'}`;
                     
+                    // Format followers count
+                    const followers = data.profile.followers;
+                    let followersText = 'N/A';
+                    if (followers !== undefined) {
+                        if (followers >= 1000000) {
+                            followersText = (followers / 1000000).toFixed(1) + 'M';
+                        } else if (followers >= 1000) {
+                            followersText = (followers / 1000).toFixed(1) + 'K';
+                        } else {
+                            followersText = followers.toString();
+                        }
+                    }
+                    
+                    document.getElementById('followers').textContent = followersText;
+                    
+                    // Set default values for missing data
+                    document.getElementById('following').textContent = data.profile.following_formatted || 'N/A';
+                    document.getElementById('posts').textContent = data.profile.posts_count || 'N/A';
+                    
+                    // Set profile bio if available
+                    const bioElement = document.getElementById('profileBio');
+                    if (bioElement) {
+                        bioElement.textContent = data.profile.bio || `${data.profile.full_name}'s Instagram profile`;
+                    }
+                    
+                    // Set profile image if available
+                    const profileImageElement = document.getElementById('profileImage');
+                    if (profileImageElement) {
+                        console.log("Setting profile image path:", data.profile.profile_pic);
+                        profileImageElement.src = data.profile.profile_pic || '/static/images/default-profile.png';
+                        profileImageElement.onerror = function() {
+                            console.error("Failed to load profile image");
+                            this.src = '/static/images/default-profile.png';
+                        };
+                    }
+                }
+
+                // Post Section
+                if (data.post) {
+                    const postImageElement = document.getElementById('postImage');
+                    if (postImageElement) {
+                        console.log("Setting post image path:", data.post.local_image_path);
+                        postImageElement.src = data.post.local_image_path || '/static/images/default-post.png';
+                        postImageElement.onerror = function() {
+                            console.error("Failed to load post image");
+                            this.src = '/static/images/default-post.png';
+                        };
+                    }
+                }
+
+                // Sentiment Analysis
+                if (data.sentiment) {
+                    // Text sentiment
+                    if (data.sentiment.text_sentiment) {
+                        const textSentimentElement = document.getElementById('textSentiment');
+                        const textScoreElement = document.getElementById('textSentimentScore');
+                        
+                        if (textSentimentElement) {
+                            textSentimentElement.textContent = data.sentiment.text_sentiment.label || 'N/A';
+                        }
+                        
+                        if (textScoreElement) {
+                            const score = data.sentiment.text_sentiment.score || 0;
+                            textScoreElement.textContent = score.toFixed(2);
+                            
+                            // Update progress bar
+                            const textProgressElement = textSentimentElement.parentElement.querySelector('.progress-value');
+                            if (textProgressElement) {
+                                textProgressElement.style.width = `${Math.abs(score) * 100}%`;
+                                
+                                // Adjust color based on sentiment
+                                if (score < 0) {
+                                    textProgressElement.style.background = 'linear-gradient(45deg, #ef4444, #dc2626)';
+                                } else {
+                                    textProgressElement.style.background = 'linear-gradient(45deg, #22c55e, #16a34a)';
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Emoji sentiment
+                    if (data.sentiment.emoji_sentiment) {
+                        const emojiSentimentElement = document.getElementById('emojiSentiment');
+                        const emojiScoreElement = document.getElementById('emojiSentimentScore');
+                        
+                        if (emojiSentimentElement) {
+                            emojiSentimentElement.textContent = data.sentiment.emoji_sentiment.label || 'N/A';
+                        }
+                        
+                        if (emojiScoreElement) {
+                            const score = data.sentiment.emoji_sentiment.score || 0;
+                            emojiScoreElement.textContent = score.toFixed(2);
+                            
+                            // Update progress bar
+                            const emojiProgressElement = emojiSentimentElement.parentElement.querySelector('.progress-value');
+                            if (emojiProgressElement) {
+                                emojiProgressElement.style.width = `${Math.abs(score) * 100}%`;
+                                
+                                // Adjust color based on sentiment
+                                if (score < 0) {
+                                    emojiProgressElement.style.background = 'linear-gradient(45deg, #ef4444, #dc2626)';
+                                } else {
+                                    emojiProgressElement.style.background = 'linear-gradient(45deg, #22c55e, #16a34a)';
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Combined sentiment
+                    if (data.sentiment.combined_sentiment) {
+                        const combinedSentimentElement = document.getElementById('combinedSentiment');
+                        const combinedScoreElement = document.getElementById('combinedSentimentScore');
+                        
+                        if (combinedSentimentElement) {
+                            combinedSentimentElement.textContent = data.sentiment.combined_sentiment.label || 'N/A';
+                        }
+                        
+                        if (combinedScoreElement) {
+                            const score = data.sentiment.combined_sentiment.score || 0;
+                            combinedScoreElement.textContent = score.toFixed(2);
+                            
+                            // Update progress bar
+                            const combinedProgressElement = combinedSentimentElement.parentElement.querySelector('.progress-value');
+                            if (combinedProgressElement) {
+                                combinedProgressElement.style.width = `${Math.abs(score) * 100}%`;
+                                
+                                // Adjust color based on sentiment
+                                if (score < 0) {
+                                    combinedProgressElement.style.background = 'linear-gradient(45deg, #ef4444, #dc2626)';
+                                } else {
+                                    combinedProgressElement.style.background = 'linear-gradient(45deg, #22c55e, #16a34a)';
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Sarcasm Detection
+                if (data.sarcasm) {
+                    const sarcasmElement = document.getElementById('sarcasmResult');
+                    const sarcasmScoreElement = document.getElementById('sarcasmScore');
+                    const sarcasmInterpretationElement = document.getElementById('sarcasmInterpretation');
+                    
+                    if (sarcasmElement && data.sarcasm.result) {
+                        sarcasmElement.textContent = data.sarcasm.result;
+                    }
+                    
+                    if (sarcasmScoreElement && data.sarcasm.score !== undefined) {
+                        const score = data.sarcasm.score;
+                        sarcasmScoreElement.textContent = score.toFixed(2);
+                        
+                        // Update progress bar
+                        const progressBarElement = sarcasmElement.parentElement.querySelector('.progress-value');
+                        if (progressBarElement) {
+                            progressBarElement.style.width = `${score * 100}%`;
+                            
+                            // Adjust color based on sarcasm level
+                            if (score > 0.7) {
+                                progressBarElement.style.background = 'linear-gradient(45deg, #ef4444, #dc2626)';
+                            } else if (score > 0.3) {
+                                progressBarElement.style.background = 'linear-gradient(45deg, #f59e0b, #d97706)';
+                            } else {
+                                progressBarElement.style.background = 'linear-gradient(45deg, #22c55e, #16a34a)';
+                            }
+                        }
+                    }
+                    
+                    if (sarcasmInterpretationElement && data.sarcasm.interpretation) {
+                        sarcasmInterpretationElement.textContent = data.sarcasm.interpretation;
+                    }
+                }
+
+                // Image Clustering Section
+                if (data.images) {
+                    const imageCategories = document.getElementById('imageCategories');
+                    const clusterContainer = document.getElementById('clusterContainer');
+                    
+                    // Clear existing content
+                    if (imageCategories) imageCategories.innerHTML = '';
+                    if (clusterContainer) clusterContainer.innerHTML = '';
+                    
+                    // Create a new cluster for the images
                     const clusterDiv = document.createElement('div');
                     clusterDiv.className = 'cluster';
                     
                     const titleDiv = document.createElement('div');
                     titleDiv.className = 'cluster-title';
-                    titleDiv.textContent = `Cluster: ${clusterName}`;
+                    titleDiv.textContent = 'Post Images';
                     clusterDiv.appendChild(titleDiv);
                     
-                    const imagesDiv = document.createElement('div');
-                    imagesDiv.className = 'cluster-images';
+                    // Create image container
+                    const imagesContainer = document.createElement('div');
+                    imagesContainer.className = 'cluster-images';
+                    imagesContainer.style.display = 'flex';
+                    imagesContainer.style.flexWrap = 'wrap';
+                    imagesContainer.style.gap = '15px';
+                    imagesContainer.style.justifyContent = 'center';
                     
-                    // Process each item in the cluster
-                    clusterItems.forEach(item => {
-                        if (item.path) {
-                            // Fix the path from backend
-                            const correctedPath = fixImagePath(item.path);
-                            console.log("Original path:", item.path);
-                            console.log("Corrected path:", correctedPath);
-                            debugLocalImage(item.path, correctedPath);
+                    // Add each image
+                    if (data.images.images && data.images.images.length > 0) {
+                        data.images.images.forEach(imagePath => {
+                            const imgDiv = document.createElement('div');
+                            imgDiv.style.position = 'relative';
+                            imgDiv.style.width = '200px';
+                            imgDiv.style.height = '200px';
+                            imgDiv.style.overflow = 'hidden';
+                            imgDiv.style.borderRadius = '8px';
+                            imgDiv.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
                             
                             const img = document.createElement('img');
-                            img.src = correctedPath;
-                            img.className = 'cluster-image';
-                            img.alt = `${clusterName} image`;
+                            img.src = imagePath;
+                            img.style.width = '100%';
+                            img.style.height = '100%';
+                            img.style.objectFit = 'cover';
+                            img.style.transition = 'transform 0.3s';
                             
-                            // Show categories as title
-                            if (item.categories && item.categories.length > 0) {
-                                const topCategory = item.categories[0];
-                                img.title = `${topCategory.label} (${(topCategory.score * 100).toFixed(0)}%)`;
-                            }
-                            
-                            // Error handling
                             img.onerror = function() {
-                                console.log("Cluster image failed to load:", correctedPath);
-                                this.style.display = 'none';
-                                
-                                // Create text alternative
-                                const textNode = document.createElement('div');
-                                textNode.className = 'cluster-image-text';
-                                textNode.textContent = clusterName;
-                                textNode.style.width = '120px';
-                                textNode.style.height = '120px';
-                                textNode.style.display = 'flex';
-                                textNode.style.alignItems = 'center';
-                                textNode.style.justifyContent = 'center';
-                                textNode.style.backgroundColor = '#f0f2f5';
-                                textNode.style.borderRadius = '8px';
-                                textNode.style.color = '#555';
-                                textNode.style.fontSize = '14px';
-                                textNode.style.padding = '10px';
-                                textNode.style.textAlign = 'center';
-                                
-                                this.parentNode.appendChild(textNode);
+                                console.error("Failed to load image:", imagePath);
+                                this.src = '/static/images/default-post.png';
                             };
                             
-                            imagesDiv.appendChild(img);
-                        }
-                    });
+                            img.onmouseover = function() {
+                                this.style.transform = 'scale(1.05)';
+                            };
+                            
+                            img.onmouseout = function() {
+                                this.style.transform = 'scale(1)';
+                            };
+                            
+                            imgDiv.appendChild(img);
+                            imagesContainer.appendChild(imgDiv);
+                        });
+                    } else {
+                        const noImagesDiv = document.createElement('div');
+                        noImagesDiv.style.padding = '20px';
+                        noImagesDiv.style.textAlign = 'center';
+                        noImagesDiv.style.color = '#666';
+                        noImagesDiv.textContent = 'No images available for this post';
+                        imagesContainer.appendChild(noImagesDiv);
+                    }
                     
-                    clusterDiv.appendChild(imagesDiv);
+                    clusterDiv.appendChild(imagesContainer);
                     clusterContainer.appendChild(clusterDiv);
-                });
-            } else {
-                // Fallback to displaying just the categories if no clusters
-                const infoDiv = document.createElement('div');
-                infoDiv.style.padding = "15px";
-                infoDiv.style.backgroundColor = "#f8f9fa";
-                infoDiv.style.borderRadius = "8px";
-                infoDiv.style.margin = "10px 0";
+                }
                 
-                const categories = data.images && data.images.category_distribution ? 
-                    Object.keys(data.images.category_distribution) : [];
+                // Update all charts with the new data
+                updateCharts(data);
+            }
+            
+            function updateCharts(data) {
+                // Engagement Chart
+                if (engagementChart) {
+                    const likeCount = data.post?.likes_count || 0;
+                    const commentCount = data.post?.comments_count || 0;
                     
-                if (categories.length > 0) {
-                    infoDiv.textContent = `This image has been classified as: ${categories.join(', ')}`;
-                } else {
-                    infoDiv.textContent = 'No image categories detected';
+                    // Calculate average as 60% of current if not provided
+                    const avgLikes = data.post?.avg_likes || Math.round(likeCount * 0.6);
+                    const avgComments = data.post?.avg_comments || Math.round(commentCount * 0.6);
+                    
+                    engagementChart.data.datasets[0].data = [likeCount, avgLikes];
+                    engagementChart.data.datasets[1].data = [commentCount, avgComments];
+                    engagementChart.update();
                 }
                 
-                clusterContainer.appendChild(infoDiv);
-            }
-        }
-        
-        // Update all charts with the new data
-        updateCharts(data);
-    }
-    
-    function updateCharts(data) {
-        // Engagement Chart
-        if (engagementChart) {
-            const likeCount = data.post?.likes_count || 0;
-            const commentCount = data.post?.comments_count || 0;
-            
-            // Calculate average as 60% of current if not provided
-            const avgLikes = data.post?.avg_likes || Math.round(likeCount * 0.6);
-            const avgComments = data.post?.avg_comments || Math.round(commentCount * 0.6);
-            
-            engagementChart.data.datasets[0].data = [likeCount, avgLikes];
-            engagementChart.data.datasets[1].data = [commentCount, avgComments];
-            engagementChart.update();
-        }
-        
-        // Sentiment Chart
-        if (sentimentChart && data.sentiment) {
-            // Extract values from emotional_tone or use defaults
-            const emotionalTone = data.sentiment.emotional_tone || {};
-            
-            const textSentiment = [
-                emotionalTone.positivity || 0.5,
-                emotionalTone.negativity || 0.1,
-                emotionalTone.neutrality || 0.4,
-                emotionalTone.emotionality || 0.6,
-                emotionalTone.objectivity || 0.4
-            ];
-            
-            // For emoji sentiment, use default values if not present
-            const emojiSentiment = [0.6, 0.05, 0.35, 0.7, 0.3];
-            
-            sentimentChart.data.datasets[0].data = textSentiment;
-            sentimentChart.data.datasets[1].data = emojiSentiment;
-            sentimentChart.update();
-        }
-        
-        // Sarcasm Chart
-        if (sarcasmChart && data.sarcasm) {
-            const sarcasmScore = data.sarcasm.score || 0;
-            
-            // Calculate distribution based on score
-            const notSarcastic = Math.max(0, 100 - (sarcasmScore * 100));
-            
-            // Distribute remaining percentage among sarcasm levels
-            let mildSarcastic = 0;
-            let moderateSarcastic = 0;
-            let highlySarcastic = 0;
-            
-            if (sarcasmScore < 0.33) {
-                mildSarcastic = sarcasmScore * 100;
-            } else if (sarcasmScore < 0.66) {
-                mildSarcastic = 33;
-                moderateSarcastic = (sarcasmScore - 0.33) * 100;
-            } else {
-                mildSarcastic = 33;
-                moderateSarcastic = 33;
-                highlySarcastic = (sarcasmScore - 0.66) * 100;
-            }
-            
-            sarcasmChart.data.datasets[0].data = [notSarcastic, mildSarcastic, moderateSarcastic, highlySarcastic];
-            sarcasmChart.update();
-        }
-    }
-    function debugInstagramImage(imageUrl) {
-        console.log("%c Instagram Image Debug:", "background: #833AB4; color: white; padding: 2px 5px; border-radius: 3px;");
-        console.log("- Image URL:", imageUrl);
-        console.log("- URL Length:", imageUrl ? imageUrl.length : 0);
-        console.log("- Is URL valid format:", imageUrl ? imageUrl.startsWith('http') : false);
-        
-        // Try to load image via fetch to check if it's accessible
-        if (imageUrl && imageUrl.startsWith('http')) {
-            console.log("- Attempting to fetch image...");
-            fetch(imageUrl, { method: 'HEAD', mode: 'no-cors' })
-                .then(response => {
-                    console.log("- Fetch response:", response.status);
-                })
-                .catch(error => {
-                    console.error("- Fetch failed:", error);
-                });
-        }
-    }
-    
-    // Debug function for local image path
-    function debugLocalImage(originalPath, fixedPath) {
-        console.log("%c Local Image Debug:", "background: #22c55e; color: white; padding: 2px 5px; border-radius: 3px;");
-        console.log("- Original path:", originalPath);
-        console.log("- Fixed path:", fixedPath);
-        console.log("- File name:", originalPath ? originalPath.split('/').pop() : '');
-        
-        // Check if path contains problematic characters
-        const hasProblematicChars = fixedPath ? /[?&#]/.test(fixedPath) : false;
-        console.log("- Contains problematic chars:", hasProblematicChars);
-        
-        // Create a test image element to see if it loads
-        const testImg = new Image();
-        testImg.onload = function() {
-            console.log("- Test image loaded successfully with dimensions:", 
-                        this.naturalWidth + "x" + this.naturalHeight);
-        };
-        testImg.onerror = function() {
-            console.error("- Test image failed to load");
-        };
-        console.log("- Attempting to load test image...");
-        testImg.src = fixedPath;
-    }
-
-    // Download PDF button
-    document.getElementById('downloadPdf').addEventListener('click', function() {
-        const element = document.getElementById('report');
-        const options = {
-            margin: 10,
-            filename: 'instagram-analysis-report.pdf',
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-        
-        // Generate PDF
-        html2pdf().from(element).set(options).save();
-    });
-    
-    // Create charts and store references
-    function createCharts() {
-        // Engagement Chart
-        const engagementCtx = document.getElementById('engagementChart').getContext('2d');
-        engagementChart = new Chart(engagementCtx, {
-            type: 'bar',
-            data: {
-                labels: ['This Post', 'Average'],
-                datasets: [
-                    {
-                        label: 'Likes',
-                        data: [0, 0],
-                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
-                        borderColor: 'rgba(239, 68, 68, 1)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Comments',
-                        data: [0, 0],
-                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                        borderColor: 'rgba(59, 130, 246, 1)',
-                        borderWidth: 1
+                // Sentiment Chart
+                if (sentimentChart && data.sentiment) {
+                    // Extract values from emotional_tone or use defaults
+                    const emotionalTone = data.sentiment.emotional_tone || {};
+                    
+                    const textSentiment = [
+                        emotionalTone.positivity || 0.5,
+                        emotionalTone.negativity || 0.1,
+                        emotionalTone.neutrality || 0.4,
+                        emotionalTone.emotionality || 0.6,
+                        emotionalTone.objectivity || 0.4
+                    ];
+                    
+                    // For emoji sentiment, use default values if not present
+                    const emojiSentiment = [0.6, 0.05, 0.35, 0.7, 0.3];
+                    
+                    sentimentChart.data.datasets[0].data = textSentiment;
+                    sentimentChart.data.datasets[1].data = emojiSentiment;
+                    sentimentChart.update();
+                }
+                
+                // Sarcasm Chart
+                if (sarcasmChart && data.sarcasm) {
+                    const sarcasmScore = data.sarcasm.score || 0;
+                    
+                    // Calculate distribution based on score
+                    const notSarcastic = Math.max(0, 100 - (sarcasmScore * 100));
+                    
+                    // Distribute remaining percentage among sarcasm levels
+                    let mildSarcastic = 0;
+                    let moderateSarcastic = 0;
+                    let highlySarcastic = 0;
+                    
+                    if (sarcasmScore < 0.33) {
+                        mildSarcastic = sarcasmScore * 100;
+                    } else if (sarcasmScore < 0.66) {
+                        mildSarcastic = 33;
+                        moderateSarcastic = (sarcasmScore - 0.33) * 100;
+                    } else {
+                        mildSarcastic = 33;
+                        moderateSarcastic = 33;
+                        highlySarcastic = (sarcasmScore - 0.66) * 100;
                     }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Engagement Comparison',
-                        font: {
-                            size: 16
-                        }
-                    },
-                    legend: {
-                        position: 'top'
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
+                    
+                    sarcasmChart.data.datasets[0].data = [notSarcastic, mildSarcastic, moderateSarcastic, highlySarcastic];
+                    sarcasmChart.update();
                 }
             }
-        });
-        
-        // Sentiment Chart
-        const sentimentCtx = document.getElementById('sentimentChart').getContext('2d');
-        sentimentChart = new Chart(sentimentCtx, {
-            type: 'radar',
-            data: {
-                labels: ['Positivity', 'Negativity', 'Neutrality', 'Emotionality', 'Objectivity'],
-                datasets: [{
-                    label: 'Text Sentiment',
-                    data: [0, 0, 0, 0, 0],
-                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                    borderColor: 'rgba(59, 130, 246, 1)',
-                    borderWidth: 2,
-                    pointBackgroundColor: 'rgba(59, 130, 246, 1)'
-                }, {
-                    label: 'Emoji Sentiment',
-                    data: [0, 0, 0, 0, 0],
-                    backgroundColor: 'rgba(139, 92, 246, 0.2)',
-                    borderColor: 'rgba(139, 92, 246, 1)',
-                    borderWidth: 2,
-                    pointBackgroundColor: 'rgba(139, 92, 246, 1)'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Sentiment Analysis Breakdown',
-                        font: {
-                            size: 16
-                        }
-                    }
-                },
-                scales: {
-                    r: {
-                        min: 0,
-                        max: 1,
-                        ticks: {
-                            stepSize: 0.2
+           
+            // Download PDF button
+            document.getElementById('downloadPdf').addEventListener('click', function() {
+                const element = document.getElementById('report');
+                const options = {
+                    margin: 10,
+                    filename: 'instagram-analysis-report.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+                
+                // Generate PDF
+                html2pdf().from(element).set(options).save();
+            });
+            
+            // Create charts and store references
+            function createCharts() {
+                // Engagement Chart
+                const engagementCtx = document.getElementById('engagementChart').getContext('2d');
+                engagementChart = new Chart(engagementCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['This Post', 'Average'],
+                        datasets: [
+                            {
+                                label: 'Likes',
+                                data: [0, 0],
+                                backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                                borderColor: 'rgba(239, 68, 68, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Comments',
+                                data: [0, 0],
+                                backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                                borderColor: 'rgba(59, 130, 246, 1)',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Engagement Comparison',
+                                font: {
+                                    size: 16
+                                }
+                            },
+                            legend: {
+                                position: 'top'
+                            }
                         },
-                        pointLabels: {
-                            font: {
-                                size: 12
+                        scales: {
+                            y: {
+                                beginAtZero: true
                             }
                         }
                     }
-                }
-            }
-        });
-        
-        // Sarcasm Chart
-        const sarcasmCtx = document.getElementById('sarcasmChart').getContext('2d');
-        sarcasmChart = new Chart(sarcasmCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Not Sarcastic', 'Mildly Sarcastic', 'Moderately Sarcastic', 'Highly Sarcastic'],
-                datasets: [{
-                    data: [100, 0, 0, 0],
-                    backgroundColor: [
-                        'rgba(34, 197, 94, 0.7)',
-                        'rgba(234, 179, 8, 0.7)',
-                        'rgba(249, 115, 22, 0.7)',
-                        'rgba(239, 68, 68, 0.7)'
-                    ],
-                    borderColor: [
-                        'rgba(34, 197, 94, 1)',
-                        'rgba(234, 179, 8, 1)',
-                        'rgba(249, 115, 22, 1)',
-                        'rgba(239, 68, 68, 1)'
-                    ],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Sarcasm Analysis',
-                        font: {
-                            size: 16
-                        }
+                });
+                
+                // Sentiment Chart
+                const sentimentCtx = document.getElementById('sentimentChart').getContext('2d');
+                sentimentChart = new Chart(sentimentCtx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['Positivity', 'Negativity', 'Neutrality', 'Emotionality', 'Objectivity'],
+                        datasets: [{
+                            label: 'Text Sentiment',
+                            data: [0, 0, 0, 0, 0],
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 2,
+                            pointBackgroundColor: 'rgba(59, 130, 246, 1)'
+                        }, {
+                            label: 'Emoji Sentiment',
+                            data: [0, 0, 0, 0, 0],
+                            backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                            borderColor: 'rgba(139, 92, 246, 1)',
+                            borderWidth: 2,
+                            pointBackgroundColor: 'rgba(139, 92, 246, 1)'
+                        }]
                     },
-                    legend: {
-                        position: 'right'
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Sentiment Analysis Breakdown',
+                                font: {
+                                    size: 16
+                                }
+                            }
+                        },
+                        scales: {
+                            r: {
+                                min: 0,
+                                max: 1,
+                                ticks: {
+                                    stepSize: 0.2
+                                },
+                                pointLabels: {
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            }
+                        }
                     }
-                }
+                });
+                
+                // Sarcasm Chart
+                const sarcasmCtx = document.getElementById('sarcasmChart').getContext('2d');
+                sarcasmChart = new Chart(sarcasmCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Not Sarcastic', 'Mildly Sarcastic', 'Moderately Sarcastic', 'Highly Sarcastic'],
+                        datasets: [{
+                            data: [100, 0, 0, 0],
+                            backgroundColor: [
+                                'rgba(34, 197, 94, 0.7)',
+                                'rgba(234, 179, 8, 0.7)',
+                                'rgba(249, 115, 22, 0.7)',
+                                'rgba(239, 68, 68, 0.7)'
+                            ],
+                            borderColor: [
+                                'rgba(34, 197, 94, 1)',
+                                'rgba(234, 179, 8, 1)',
+                                'rgba(249, 115, 22, 1)',
+                                'rgba(239, 68, 68, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Sarcasm Analysis',
+                                font: {
+                                    size: 16
+                                }
+                            },
+                            legend: {
+                                position: 'right'
+                            }
+                        }
+                    }
+                });
             }
         });
-    }
-});
     </script>
 </body>
 </html>
