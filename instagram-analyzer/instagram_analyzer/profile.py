@@ -20,10 +20,10 @@ def download_image(url: str, output_dir: str, filename: str) -> str:
             print(f"Image downloaded successfully to: {full_path}")
             return relative_path
         else:
-            print(f"Failed to download image from {url}. Status code: {response.status_code}")
+            print(f"Failed to download image from {url}. Status code: {response.status_code}\n-----------------------------------------------------")
             return "/static/images/default-image.png"
     except Exception as e:
-        print(f"Error downloading image from {url}: {str(e)}")
+        print(f"Error downloading image from {url}: {str(e)}\n-----------------------------------------------------")
         return "/static/images/default-image.png"
 
 def get_profile(url: str) -> dict:
@@ -31,14 +31,14 @@ def get_profile(url: str) -> dict:
     Get profile information for the owner of an Instagram post, including locally stored profile picture.
     """
     try:
-        print(f"Fetching profile for URL: {url}")
+        print(f"Fetching profile for URL: {url}\n-----------------------------------------------------")
         loader = instaloader.Instaloader()
         
         # Extract shortcode from URL
         if '?' in url:
             url = url.split('?')[0]
         shortcode = url.split('/')[-2]
-        print(f"Extracted shortcode: {shortcode}")
+        print(f"Extracted shortcode: {shortcode}\n-----------------------------------------------------")
         
         # Get post and profile data
         post = instaloader.Post.from_shortcode(loader.context, shortcode)
@@ -79,11 +79,11 @@ def get_profile(url: str) -> dict:
             "is_verified": profile.is_verified
         }
         
-        print("Profile data retrieved successfully:", result)
+        print("Profile data retrieved successfully:", result,"\n-----------------------------------------------------")
         return result
         
     except Exception as e:
-        print(f"Error fetching user profile: {str(e)}")
+        print(f"Error fetching user profile: {str(e)}\n-----------------------------------------------------")
         # Return a default profile with error indication
         return {
             "username": "N/A",
@@ -131,7 +131,7 @@ def get_post_image_url(instagram_url: str) -> str:
         relative_path = download_image(img_url, output_dir, filename)
         return relative_path
     except Exception as e:
-        print(f"Failed to get post image: {e}")
+        print(f"Failed to get post image: {e}\n-----------------------------------------------------")
         return "/static/images/default-post.png"
 
 def get_profile_picture(instagram_url: str) -> str:
@@ -151,5 +151,5 @@ def get_profile_picture(instagram_url: str) -> str:
         relative_path = download_image(profile_pic_url, output_dir, filename)
         return relative_path
     except Exception as e:
-        print(f"Failed to get profile picture: {e}")
+        print(f"Failed to get profile picture: {e}\n-----------------------------------------------------")
         return "/static/images/default-profile.png"

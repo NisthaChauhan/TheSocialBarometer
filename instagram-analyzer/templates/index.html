@@ -714,6 +714,25 @@
                     }
                 }
 
+                // Engagement Section
+                if (data.post) {
+                    // Likes
+                    const likesElement = document.getElementById('likesCount');
+                    if (likesElement) {
+                        likesElement.textContent = data.post.likes_count?.toLocaleString() || 'N/A';
+                    }
+                    // Comments
+                    const commentsElement = document.getElementById('commentsCount');
+                    if (commentsElement) {
+                        commentsElement.textContent = data.post.comments_count?.toLocaleString() || 'N/A';
+                    }
+                    // Engagement Rate
+                    const engagementRateElement = document.getElementById('engagementRate');
+                    if (engagementRateElement) {
+                        engagementRateElement.textContent = (data.post.engagement_rate ? data.post.engagement_rate + '%' : 'N/A');
+                    }
+                }
+
                 // Sentiment Analysis
                 if (data.sentiment) {
                     // Text sentiment
@@ -874,14 +893,16 @@
                             imgDiv.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
                             
                             const img = document.createElement('img');
-                            img.src = imagePath;
+                            // Ensure the path starts with /static/
+                            const normalizedPath = imagePath.startsWith('/static/') ? imagePath : `/static/${imagePath}`;
+                            img.src = normalizedPath;
                             img.style.width = '100%';
                             img.style.height = '100%';
                             img.style.objectFit = 'cover';
                             img.style.transition = 'transform 0.3s';
                             
                             img.onerror = function() {
-                                console.error("Failed to load image:", imagePath);
+                                console.error("Failed to load image:", normalizedPath);
                                 this.src = '/static/images/default-post.png';
                             };
                             
@@ -911,18 +932,30 @@
                 
                 // Update all charts with the new data
                 updateCharts(data);
+
+                console.log("Setting caption:", data.post.caption);
+                const postCaptionElement = document.getElementById('postCaption');
+                if (postCaptionElement) {
+                    postCaptionElement.textContent = data.post.caption || 'No caption available';
+                }
+
+                setTimeout(() => {
+                    const el = document.getElementById('postCaption');
+                    if (el) {
+                        console.log('Post caption innerText after update:', el.innerText);
+                    }
+                }, 1000);
             }
             
             function updateCharts(data) {
                 // Engagement Chart
-                if (engagementChart) {
-                    const likeCount = data.post?.likes_count || 0;
-                    const commentCount = data.post?.comments_count || 0;
-                    
+                if (engagementChart && data.post) {
+                    const likeCount = data.post.likes_count || 0;
+                    const commentCount = data.post.comments_count || 0;
                     // Calculate average as 60% of current if not provided
-                    const avgLikes = data.post?.avg_likes || Math.round(likeCount * 0.6);
-                    const avgComments = data.post?.avg_comments || Math.round(commentCount * 0.6);
-                    
+                    const avgLikes = Math.round(likeCount * 0.6);
+                    const avgComments = Math.round(commentCount * 0.6);
+
                     engagementChart.data.datasets[0].data = [likeCount, avgLikes];
                     engagementChart.data.datasets[1].data = [commentCount, avgComments];
                     engagementChart.update();
