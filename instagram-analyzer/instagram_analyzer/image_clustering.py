@@ -459,7 +459,6 @@ def get_image_category(img_path):
     initialize_models()
     
     try:
-        print("***********************************inside TRY\n***********************************")
         img = image.load_img(img_path, target_size=(224, 224))
         img_array = image.img_to_array(img)
         img_array = np.expand_dims(img_array, axis=0)
@@ -597,7 +596,7 @@ def evaluate_clustering(features, clusters, n_clusters):
     
     return metrics
 
-def cluster_images(image_paths):
+'''def cluster_images(image_paths):
     """
     Cluster images using KMeans
     """
@@ -610,15 +609,8 @@ def cluster_images(image_paths):
         main_category = categories[0]["label"]
         
         # Get relative path for frontend
-        '''relative_path = image_paths[0].replace("\\", "/")
-        if "/static/" not in relative_path:
-            relative_path = "/static/uploads/images/" + os.path.basename(relative_path)
-            '''
-        # In cluster_images() function
-        relative_path = img_path.replace(
-            r"C:\Nistha\Insta\WORKING\instagram-analyzer",
-            ""
-        ).replace("\\", "/")
+        relative_path = "/static/uploads/images/" + os.path.basename(image_paths[0])
+        
         return {
             "clusters": {
                 main_category: [{
@@ -678,6 +670,74 @@ def cluster_images(image_paths):
         "silhouette_score": score,
         "category_distribution": category_distribution
     }
+'''
+def cluster_images(image_paths):
+    """
+    Cluster images using KMeans
+    """
+    if len(image_paths) == 0:
+        return {}
+
+    if len(image_paths) == 1:
+        # Single image case
+        categories = get_image_category(image_paths[0])
+        main_category = categories[0]["label"]
+
+        relative_path = "/static/uploads/images/" + os.path.basename(image_paths[0])
+
+        return {
+            "clusters": {
+                main_category: [{
+                    "path": relative_path,
+                    "categories": categories
+                }]
+            },
+            "silhouette_score": None,
+            "category_distribution": {main_category: 1}
+        }
+
+    # Multiple images (carousel)
+    features = []
+    for img_path in image_paths:
+        feature = extract_features(img_path)
+        features.append(feature)
+
+    features = np.array(features)
+
+    optimal_n_clusters = min(len(image_paths), 3)
+
+    kmeans = KMeans(n_clusters=optimal_n_clusters, random_state=42)
+    clusters = kmeans.fit_predict(features)
+
+    score = None
+    if len(set(clusters)) > 1:
+        score = float(silhouette_score(features, clusters))
+
+    image_categories = {}
+    for i, img_path in enumerate(image_paths):
+        categories = get_image_category(img_path)
+        main_category = categories[0]["label"]
+
+        if main_category not in image_categories:
+            image_categories[main_category] = []
+
+        # 🛠 Correct the relative path:
+        relative_path = "/static/uploads/images/" + os.path.basename(img_path)
+
+        image_categories[main_category].append({
+            "path": relative_path,
+            "categories": categories,
+            "cluster": int(clusters[i])
+        })
+
+    category_distribution = {k: len(v) for k, v in image_categories.items()}
+
+    return {
+        "clusters": image_categories,
+        "silhouette_score": score,
+        "category_distribution": category_distribution
+    }
+
 
 def analyze_images(url):
     """

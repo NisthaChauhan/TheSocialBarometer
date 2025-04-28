@@ -7,6 +7,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode.js/lib/qrcode.min.js"></script>
     <style>
         :root {
             --primary-color: #405DE6;
@@ -380,6 +381,80 @@
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
         }
+
+        .download-options {
+                display: flex;
+                gap: 15px;
+                margin-top: 20px;
+            }
+        
+            /* Match download button colors */
+            .btn-share {
+                background: var(--primary-gradient);
+                position: relative;
+            }
+        
+            /* QR Modal Styles */
+            .modal {
+                display: none;
+                position: fixed;
+                z-index: 1000;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+            }
+        
+            .modal-content {
+                background-color: white;
+                margin: 15% auto;
+                padding: 25px;
+                width: 300px;
+                border-radius: var(--border-radius);
+                text-align: center;
+                position: relative;
+            }
+        
+            .close {
+                position: absolute;
+                right: 15px;
+                top: 10px;
+                font-size: 24px;
+                cursor: pointer;
+                color: var(--dark-color);
+            }
+        
+            .url-copy {
+                display: flex;
+                gap: 10px;
+                margin-top: 15px;
+            }
+        
+            #reportUrl {
+                flex: 1;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+            }
+        
+            .btn-copy {
+                padding: 8px 15px;
+                background: var(--primary-gradient);
+            }
+        
+            #qrCode {
+                padding: 15px;
+                margin: 15px auto;
+                background: white;
+                display: inline-block;
+            }
+        
+            #qrCode img {
+                width: 150px;
+                height: 150px;
+            }
+
         
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -429,7 +504,8 @@
                 <input type="text" id="instagramUrl" placeholder="Enter Instagram post URL (e.g., https://www.instagram.com/p/XXXX/)" value="https://www.instagram.com/p/DGgpWPfzcUD/">
                 <button class="btn" id="analyzeButton">Analyze Post</button>
             </div>
-            <button class="btn btn-download" id="downloadPdf">Download Report as PDF</button>
+            <button class="btn btn-download" id="downloadPdf"><i class="fas fa-file-pdf"></i> Download Report as PDF</button>
+            <button class="btn btn-download btn-share" id="shareReport"><i class="fas fa-share-alt"></i> Share Report</button>
         </div>
         
         <div class="loading" id="loadingSection">
@@ -590,7 +666,22 @@
                     </div>
                 </div>
             </div>
-            
+
+            <div id="qrModal" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h3>Share Report</h3>
+                    <div id="qrCode"></div>
+                    <p>Scan QR Code or copy link:</p>
+                    <div class="url-copy">
+                        <input type="text" id="reportUrl" readonly>
+                        <button class="btn btn-copy" onclick="copyUrl()">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
     
@@ -864,70 +955,111 @@
                     if (imageCategories) imageCategories.innerHTML = '';
                     if (clusterContainer) clusterContainer.innerHTML = '';
                     
-                    // Create a new cluster for the images
-                    const clusterDiv = document.createElement('div');
-                    clusterDiv.className = 'cluster';
+                    // Create category distribution section
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.className = 'category-distribution';
+                    categoryDiv.style.marginBottom = '20px';
                     
-                    const titleDiv = document.createElement('div');
-                    titleDiv.className = 'cluster-title';
-                    titleDiv.textContent = 'Post Images';
-                    clusterDiv.appendChild(titleDiv);
+                    const categoryTitle = document.createElement('h3');
+                    categoryTitle.textContent = 'Image Categories';
+                    categoryTitle.style.color = '#334155';
+                    categoryTitle.style.marginBottom = '15px';
+                    categoryDiv.appendChild(categoryTitle);
                     
-                    // Create image container
-                    const imagesContainer = document.createElement('div');
-                    imagesContainer.className = 'cluster-images';
-                    imagesContainer.style.display = 'flex';
-                    imagesContainer.style.flexWrap = 'wrap';
-                    imagesContainer.style.gap = '15px';
-                    imagesContainer.style.justifyContent = 'center';
+                    // Add category tags
+                    const categoryTags = document.createElement('div');
+                    categoryTags.style.display = 'flex';
+                    categoryTags.style.flexWrap = 'wrap';
+                    categoryTags.style.gap = '10px';
                     
-                    // Add each image
-                    if (data.images.images && data.images.images.length > 0) {
-                        data.images.images.forEach(imagePath => {
-                            const imgDiv = document.createElement('div');
-                            imgDiv.style.position = 'relative';
-                            imgDiv.style.width = '200px';
-                            imgDiv.style.height = '200px';
-                            imgDiv.style.overflow = 'hidden';
-                            imgDiv.style.borderRadius = '8px';
-                            imgDiv.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
-                            
-                            const img = document.createElement('img');
-                            // Ensure the path starts with /static/
-                            const normalizedPath = imagePath.startsWith('/static/') ? imagePath : `/static/${imagePath}`;
-                            img.src = normalizedPath;
-                            img.style.width = '100%';
-                            img.style.height = '100%';
-                            img.style.objectFit = 'cover';
-                            img.style.transition = 'transform 0.3s';
-                            
-                            img.onerror = function() {
-                                console.error("Failed to load image:", normalizedPath);
-                                this.src = '/static/images/default-post.png';
-                            };
-                            
-                            img.onmouseover = function() {
-                                this.style.transform = 'scale(1.05)';
-                            };
-                            
-                            img.onmouseout = function() {
-                                this.style.transform = 'scale(1)';
-                            };
-                            
-                            imgDiv.appendChild(img);
-                            imagesContainer.appendChild(imgDiv);
+                    if (data.images.category_distribution) {
+                        Object.entries(data.images.category_distribution).forEach(([category, count]) => {
+                            const tag = document.createElement('span');
+                            tag.className = 'tag';
+                            tag.textContent = `${category} (${count})`;
+                            categoryTags.appendChild(tag);
                         });
-                    } else {
-                        const noImagesDiv = document.createElement('div');
-                        noImagesDiv.style.padding = '20px';
-                        noImagesDiv.style.textAlign = 'center';
-                        noImagesDiv.style.color = '#666';
-                        noImagesDiv.textContent = 'No images available for this post';
-                        imagesContainer.appendChild(noImagesDiv);
                     }
                     
-                    clusterDiv.appendChild(imagesContainer);
-                    clusterContainer.appendChild(clusterDiv);
+                    categoryDiv.appendChild(categoryTags);
+                    imageCategories.appendChild(categoryDiv);
+                    
+                    // Create clusters
+                    if (data.images.clusters) {
+                        Object.entries(data.images.clusters).forEach(([category, images]) => {
+                            const clusterDiv = document.createElement('div');
+                            clusterDiv.className = 'cluster';
+                            
+                            const titleDiv = document.createElement('div');
+                            titleDiv.className = 'cluster-title';
+                            titleDiv.textContent = category;
+                            clusterDiv.appendChild(titleDiv);
+                            
+                            const imagesContainer = document.createElement('div');
+                            imagesContainer.className = 'cluster-images';
+                            
+                            images.forEach(image => {
+                                const imgDiv = document.createElement('div');
+                                imgDiv.style.position = 'relative';
+                                imgDiv.style.width = '200px';
+                                imgDiv.style.height = '200px';
+                                imgDiv.style.overflow = 'hidden';
+                                imgDiv.style.borderRadius = '8px';
+                                imgDiv.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+                                
+                                const img = document.createElement('img');
+                                // Convert Windows path to web path
+                                const webPath = image.path.replace(/^.*?static\\/, '/static/').replace(/\\/g, '/');
+                                img.src = webPath;
+                                img.style.width = '100%';
+                                img.style.height = '100%';
+                                img.style.objectFit = 'cover';
+                                img.style.transition = 'transform 0.3s';
+                                
+                                img.onerror = function() {
+                                    console.error("Failed to load image:", webPath);
+                                    this.src = '/static/images/default-post.png';
+                                };
+                                
+                                img.onmouseover = function() {
+                                    this.style.transform = 'scale(1.05)';
+                                };
+                                
+                                img.onmouseout = function() {
+                                    this.style.transform = 'scale(1)';
+                                };
+                                
+                                // Add categories tooltip
+                                if (image.categories) {
+                                    const tooltip = document.createElement('div');
+                                    tooltip.className = 'tooltip';
+                                    tooltip.style.position = 'absolute';
+                                    tooltip.style.bottom = '0';
+                                    tooltip.style.left = '0';
+                                    tooltip.style.right = '0';
+                                    tooltip.style.backgroundColor = 'rgba(0,0,0,0.7)';
+                                    tooltip.style.color = 'white';
+                                    tooltip.style.padding = '8px';
+                                    tooltip.style.fontSize = '12px';
+                                    
+                                    const categoriesText = image.categories
+                                        .map(cat => `${cat.label} (${(cat.score * 100).toFixed(1)}%)`)
+                                        .join(', ');
+                                    tooltip.textContent = categoriesText;
+                                    
+                                    imgDiv.appendChild(img);
+                                    imgDiv.appendChild(tooltip);
+                                } else {
+                                    imgDiv.appendChild(img);
+                                }
+                                
+                                imagesContainer.appendChild(imgDiv);
+                            });
+                            
+                            clusterDiv.appendChild(imagesContainer);
+                            clusterContainer.appendChild(clusterDiv);
+                        });
+                    }
                 }
                 
                 // Update all charts with the new data
@@ -1024,7 +1156,44 @@
                 // Generate PDF
                 html2pdf().from(element).set(options).save();
             });
-            
+            // Share Report with QR Code
+            const modal = document.getElementById('qrModal');
+            const span = document.querySelector('.close');
+
+            document.getElementById('shareReport').addEventListener('click', function() {
+                const reportUrl = window.location.href;
+                document.getElementById('reportUrl').value = reportUrl;
+                
+                // Generate QR Code
+                document.getElementById('qrCode').innerHTML = '';
+                new QRCode(document.getElementById('qrCode'), {
+                    text: reportUrl,
+                    width: 150,
+                    height: 150,
+                    colorDark : "#405DE6",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+                
+                modal.style.display = 'block';
+            });
+
+            span.onclick = function() {
+                modal.style.display = 'none';
+            }
+
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            }
+
+            function copyUrl() {
+                const copyText = document.getElementById('reportUrl');
+                copyText.select();
+                document.execCommand('copy');
+                alert('Link copied to clipboard!');
+            }
             // Create charts and store references
             function createCharts() {
                 // Engagement Chart
