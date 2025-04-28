@@ -459,13 +459,15 @@ def get_image_category(img_path):
     initialize_models()
     
     try:
+        print("***********************************inside TRY\n***********************************")
         img = image.load_img(img_path, target_size=(224, 224))
         img_array = image.img_to_array(img)
         img_array = np.expand_dims(img_array, axis=0)
         img_array = preprocess_input(img_array)
         preds = labels_model.predict(img_array)
         predictions = decode_predictions(preds, top=3)[0]
-        
+        # In get_image_category() function
+        print(f"Categories for {img_path}: {predictions}")   
         # Return top 3 predictions
         return [
             {"label": pred[1].replace('_', ' ').title(), "score": float(pred[2])}
@@ -608,10 +610,15 @@ def cluster_images(image_paths):
         main_category = categories[0]["label"]
         
         # Get relative path for frontend
-        relative_path = image_paths[0].replace("\\", "/")
+        '''relative_path = image_paths[0].replace("\\", "/")
         if "/static/" not in relative_path:
             relative_path = "/static/uploads/images/" + os.path.basename(relative_path)
-            
+            '''
+        # In cluster_images() function
+        relative_path = img_path.replace(
+            r"C:\Nistha\Insta\WORKING\instagram-analyzer",
+            ""
+        ).replace("\\", "/")
         return {
             "clusters": {
                 main_category: [{

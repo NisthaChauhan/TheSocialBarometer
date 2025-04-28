@@ -38,7 +38,7 @@ def get_engagement(url: str) -> dict:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 filename = f"post_{shortcode}_{timestamp}.jpg"
                 output_dir = os.path.join("static", "uploads", "images")
-                local_image_path = analysis_functions.save_image_from_url(shortcode,  filename)
+                local_image_path = analysis_functions.save_image_from_url(image_url,  filename)
                 
         except Exception as e:
             print(f"Error getting post image URL: {e}\n-----------------------------------------------------")
