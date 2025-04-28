@@ -14,6 +14,7 @@ def create_default_image(size, color, text, output_path):
     
     # Save image
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    
     img.save(output_path)
 
 # Create default images
