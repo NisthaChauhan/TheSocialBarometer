@@ -29,6 +29,129 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         }
         
+        [data-theme="dark"] {
+            --primary-color: #6366f1;
+            --primary-gradient: linear-gradient(45deg, #6366f1, #8b5cf6, #d946ef, #ec4899, #f43f5e);
+            --secondary-color: #a78bfa;
+            --light-color: #1f2937;
+            --dark-color: #f3f4f6;
+            --success-color: #22d3ee;
+            --warning-color: #fb7185;
+            --info-color: #60a5fa;
+        }
+
+        [data-theme="dark"] body {
+            background-color: var(--light-color);
+            color: #d1d5db;
+            background-image: radial-gradient(circle at 10% 20%, rgba(64, 93, 230, 0.2) 0.1%, rgba(139, 92, 246, 0.2) 90.1%);
+        }
+
+        [data-theme="dark"] .card {
+            background-color: #1f2937;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        [data-theme="dark"] .url-input input {
+            background-color: #374151;
+            border-color: #4b5563;
+            color: #d1d5db;
+        }
+
+        .btn-theme-toggle {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            width: 40px;
+            height: 40px;
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s;
+        }
+        
+        .btn-theme-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-theme-toggle i {
+            color: white;
+            font-size: 18px;
+        }
+
+
+        [data-theme="dark"] .header p {
+            color: #9ca3af;
+        }
+
+        [data-theme="dark"] .section-title {
+            color: #e5e7eb;
+        }
+
+        [data-theme="dark"] .metric-card {
+            background-color: #374151;
+            border-color: #4b5563;
+        }
+
+        [data-theme="dark"] .metric-title {
+            color: #9ca3af;
+        }
+
+        [data-theme="dark"] .metric-value {
+            color: #e5e7eb;
+        }
+
+        [data-theme="dark"] .profile-image {
+            border-color: #1f2937;
+        }
+
+        [data-theme="dark"] .profile-name {
+            color: #e5e7eb;
+        }
+
+        [data-theme="dark"] .profile-bio {
+            color: #9ca3af;
+            background-color: #374151;
+        }
+
+        [data-theme="dark"] .stat-value {
+            color: #e5e7eb;
+        }
+
+        [data-theme="dark"] .stat-label {
+            color: #9ca3af;
+        }
+
+        [data-theme="dark"] .post-caption {
+            background-color: #374151;
+            color: #9ca3af;
+        }
+
+        [data-theme="dark"] .cluster {
+            background-color: #374151;
+        }
+
+        [data-theme="dark"] .tag {
+            background-color: #4b5563;
+            color: #93c5fd;
+        }
+
+        [data-theme="dark"] .modal-content {
+            background-color: #1f2937;
+            color: #d1d5db;
+        }
+
+        [data-theme="dark"] #report {
+            background-color: #1f2937;
+        }
+
+
+
         body {
             line-height: 1.6;
             background-color: #f0f2f5;
@@ -493,8 +616,12 @@
     </style>
 </head>
 <body>
+    
     <div class="container">
         <div class="header">
+            <button class="btn btn-theme-toggle" id="themeToggle">
+                <i class="fas fa-moon"></i>
+            </button>
             <h1>Instagram Post Analysis Report</h1>
             <p>Comprehensive analysis of sentiment, engagement, images, and sarcasm</p>
         </div>
@@ -687,6 +814,30 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Theme toggle logic
+            const themeToggle = document.getElementById('themeToggle');
+            const htmlElement = document.documentElement;
+        
+            // Initialize theme
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            htmlElement.setAttribute('data-theme', savedTheme);
+            updateToggleIcon(savedTheme);
+        
+            // Toggle handler
+            themeToggle.addEventListener('click', () => {
+                const currentTheme = htmlElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                htmlElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateToggleIcon(newTheme);
+            });
+        
+            function updateToggleIcon(theme) {
+                const icon = themeToggle.querySelector('i');
+                icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            }
+        
+
             // Set the current date and time
             const now = new Date();
             const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
