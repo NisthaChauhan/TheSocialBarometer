@@ -1407,29 +1407,64 @@
             const span = document.querySelector('.close');
 
             // Inside the shareReport click event listener:
-            document.getElementById('shareReport').addEventListener('click', function() {
-            const reportUrl = window.location.href;
-            document.getElementById('reportUrl').value = reportUrl;
+            document.getElementById('shareReport').addEventListener('click', async function() {
+                const element = document.getElementById('report');
+                const options = {
+                  margin: 10,
+                  filename: 'instagram-analysis-report.pdf',
+                  html2canvas: { scale: 2 },
+                  jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+              
+                try {
+                  // Generate PDF Blob
+                  const pdfBlob = await html2pdf().from(element).set(options).output('blob');
+                  
+                  // Upload to server and get real URL
+                  const pdfUrl = await uploadPdfToServer(pdfBlob);
+                  
+                  // Generate QR Code
+                  const qrContainer = document.getElementById('qrCode');
+                  qrContainer.innerHTML = '';
+                  
+                  const qr = qrcode(0, 'M');
+                  qr.addData(pdfUrl);
+                  qr.make();
+                  
+                  const qrImg = document.createElement('img');
+                  qrImg.src = qr.createDataURL(4, 10);
+                  qrImg.alt = "QR Code";
+                  qrImg.style.width = '150px';
+                  qrImg.style.height = '150px';
+                  
+                  qrContainer.appendChild(qrImg);
+                  document.getElementById('reportUrl').value = pdfUrl;
+                  modal.style.display = 'block';
+                } catch (error) {
+                  console.error('Error:', error);
+                  alert('Error generating share link. Please try again.');
+                }
+              });
 
-            // Generate QR Code
-            const qrContainer = document.getElementById('qrCode');
-            qrContainer.innerHTML = ''; // Clear previous QR
+            async function uploadPdfToServer(pdfBlob) {
+            const formData = new FormData();
+            formData.append('pdf', pdfBlob, 'report.pdf');
 
-            // Use qrcode-generator library
-            const qr = qrcode(0, 'M'); // Error Correction Level: Medium
-            qr.addData(reportUrl);
-            qr.make();
-
-            // Create an image element
-            const qrImg = document.createElement('img');
-            qrImg.src = qr.createDataURL(4, 10); // 4 = cell size, 10 = margin
-            qrImg.alt = "QR Code";
-            qrImg.style.width = '150px';
-            qrImg.style.height = '150px';
-
-            qrContainer.appendChild(qrImg);
-            modal.style.display = 'block';
-            });
+            try {
+                const response = await fetch('http://localhost:5000/api/upload-report', {
+                method: 'POST',
+                body: formData
+                });
+                
+                if (!response.ok) throw new Error('Upload failed');
+                
+                const data = await response.json();
+                return data.url;
+            } catch (error) {
+                console.error('Upload error:', error);
+                throw error;
+            }
+            }
             
             span.onclick = function() {
                 modal.style.display = 'none';
