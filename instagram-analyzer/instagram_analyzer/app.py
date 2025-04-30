@@ -5,7 +5,7 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Import analysis modules
+# Import analysis   
 from instagram_analyzer.sentiment import analyze_sentiment
 from instagram_analyzer.sarcasm import detect_sarcasm
 from instagram_analyzer.image_clustering import analyze_images

@@ -7,7 +7,9 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode.js/lib/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode.js@1.0.2/qrcode.min.js"></script>
+
+
     <style>
         :root {
             --primary-color: #405DE6;
@@ -30,6 +32,7 @@
         }
         
         [data-theme="dark"] {
+
             --primary-color: #6366f1;
             --primary-gradient: linear-gradient(45deg, #6366f1, #8b5cf6, #d946ef, #ec4899, #f43f5e);
             --secondary-color: #a78bfa;
@@ -41,11 +44,41 @@
         }
 
         [data-theme="dark"] body {
+            color: #e5e7eb; 
             background-color: var(--light-color);
             color: #d1d5db;
             background-image: radial-gradient(circle at 10% 20%, rgba(64, 93, 230, 0.2) 0.1%, rgba(139, 92, 246, 0.2) 90.1%);
         }
+        [data-theme="dark"] {
+            color: #e5e7eb; /* Base text color */
 
+        }
+        [data-theme="dark"] .header h1 {
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 800;
+        }
+
+        [data-theme="dark"] .card {
+            color: #e5e7eb !important; /* Card text */
+        }
+        
+        [data-theme="dark"] .modal-content {
+            color: #e5e7eb; /* Modal text */
+        }
+        
+        [data-theme="dark"] #reportUrl {
+            background-color: #374151;
+            color: #e5e7eb;
+            border-color: #4b5563;
+        }
+        
+        [data-theme="dark"] .btn-copy {
+            color: white !important;
+        }
+        
         [data-theme="dark"] .card {
             background-color: #1f2937;
             box-shadow: 0 10px 20px rgba(0,0,0,0.2);
@@ -103,7 +136,8 @@
         }
 
         [data-theme="dark"] .metric-value {
-            color: #e5e7eb;
+            color: #ffffff;
+            text-shadow: 0 0 5px rgba(99, 102, 241, 0.3);
         }
 
         [data-theme="dark"] .profile-image {
@@ -111,7 +145,12 @@
         }
 
         [data-theme="dark"] .profile-name {
-            color: #e5e7eb;
+            color: #ffffff;
+            text-shadow: 0 0 5px rgba(99, 102, 241, 0.2);
+        }
+        [data-theme="dark"] .post-caption {
+            background-color: #374151;
+            color: #9ca3af;
         }
 
         [data-theme="dark"] .profile-bio {
@@ -119,9 +158,12 @@
             background-color: #374151;
         }
 
+        
         [data-theme="dark"] .stat-value {
-            color: #e5e7eb;
+            color: #ffffff;
+            text-shadow: 0 0 5px rgba(99, 102, 241, 0.2);
         }
+
 
         [data-theme="dark"] .stat-label {
             color: #9ca3af;
@@ -129,16 +171,29 @@
 
         [data-theme="dark"] .post-caption {
             background-color: #374151;
-            color: #9ca3af;
+            color: #d1d5db;
+            border-left: 4px solid var(--secondary-color);
         }
-
         [data-theme="dark"] .cluster {
             background-color: #374151;
+        }
+        
+        [data-theme="dark"] .cluster-title {
+            color: var(--info-color);
+        }
+
+        [data-theme="dark"] .metric-card:hover {
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.15);
+            border-color: var(--info-color);
         }
 
         [data-theme="dark"] .tag {
             background-color: #4b5563;
-            color: #93c5fd;
+            color: #bfdbfe;
+            border: 1px solid rgba(147, 197, 253, 0.3);
+        }
+        [data-theme="dark"] .progress-label {
+            color: #e5e7eb;
         }
 
         [data-theme="dark"] .modal-content {
@@ -150,6 +205,12 @@
             background-color: #1f2937;
         }
 
+        [data-theme="dark"] .container {
+            background-color: rgba(31, 41, 55, 0.5);
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+            padding: 30px 25px;
+        }
 
 
         body {
@@ -342,7 +403,10 @@
             font-size: 18px;
             margin-bottom: 15px;
         }
-        
+
+        [data-theme="dark"] .profile-username {
+            color: var(--info-color);
+        }
         .profile-bio {
             color: #64748b;
             margin-bottom: 20px;
@@ -416,6 +480,14 @@
             overflow: hidden;
         }
         
+        [data-theme="dark"] .progress-bar {
+            background-color: #4b5563;
+        }
+        
+        [data-theme="dark"] .progress-value {
+            background: var(--primary-gradient);
+        }
+
         .progress-value {
             height: 100%;
             border-radius: 6px;
@@ -459,8 +531,18 @@
             transition: transform 0.3s;
         }
         
+        [data-theme="dark"] .cluster-image {
+            border-color: #374151;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+        }
+
         .cluster-image:hover {
             transform: scale(1.1);
+        }
+
+        [data-theme="dark"] .cluster-image:hover {
+            transform: scale(1.1);
+            border-color: var(--info-color);
         }
         
         .chart-container {
@@ -468,7 +550,13 @@
             height: 300px;
             margin: 20px 0;
         }
-        
+
+        [data-theme="dark"] .chart-container {
+            background-color: #2d3748;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
         .tag {
             display: inline-block;
             background-color: #dbeafe;
@@ -547,7 +635,9 @@
                 cursor: pointer;
                 color: var(--dark-color);
             }
-        
+            [data-theme="dark"] .close {
+                color: #e5e7eb;
+            }
             .url-copy {
                 display: flex;
                 gap: 10px;
@@ -597,6 +687,10 @@
             font-size: 14px;
         }
         
+        [data-theme="dark"] .date-time {
+            color: #9ca3af;
+        }
+
         /* Media queries */
         @media(max-width: 768px) {
             .grid {
@@ -1316,19 +1410,18 @@
                 document.getElementById('reportUrl').value = reportUrl;
                 
                 // Generate QR Code
-                document.getElementById('qrCode').innerHTML = '';
-                new QRCode(document.getElementById('qrCode'), {
+                const qrContainer = document.getElementById('qrCode');
+                qrContainer.innerHTML = ''; // Clear previous QR
+                new QRCode(qrContainer, {
                     text: reportUrl,
                     width: 150,
                     height: 150,
-                    colorDark : "#405DE6",
-                    colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.H
+                    colorDark: "#405DE6",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
                 });
-                
                 modal.style.display = 'block';
             });
-
             span.onclick = function() {
                 modal.style.display = 'none';
             }
