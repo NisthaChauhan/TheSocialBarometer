@@ -92,7 +92,7 @@ From sentiment analysis to image clustering and sarcasm detection, this project 
 
 ## 📄 Project Poster
 
-🖼️ [View Poster (PDF)](./instagram-analyzer/instagram_analyzer)  
+🖼️ [View Poster (PDF)](./instagram-analyzer/instagram_analyzer/poster.png)  
 
 
 ## 📚 References
