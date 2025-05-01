@@ -50,12 +50,8 @@ def augment_text(text):
 
 
 def train_test_split(datastore):
-    sentences, labels = [], []
-    
-    for _, row in datastore.iterrows():
-        sentences = [preprocess_text(row['headline']) for _, row in datastore.iterrows()]
-        labels.append(row['is_sarcastic'])
-    
+    sentences = [preprocess_text(row["headline"]) for _, row in datastore.iterrows()]
+    labels = [row["is_sarcastic"] for _, row in datastore.iterrows()]
     
     training_sentences = sentences[:training_size]
     testing_sentences = sentences[training_size:]
@@ -99,14 +95,6 @@ def sarcasm_detection_model():
         restore_best_weights=True
     )
 
-    model.fit(
-        training_padded, 
-        training_labels, 
-        epochs=num_epochs, 
-        validation_data=(testing_padded, testing_labels), 
-        callbacks=[early_stopping],
-        verbose=1
-    )   
     return model
 
 
@@ -156,7 +144,11 @@ if __name__ == "__main__":
     print("Training sarcasm detection model...")
     training_padded, training_labels, testing_padded, testing_labels, tokenizer = train_test_split(datastore)
     model = sarcasm_detection_model()
-    model.fit(training_padded, training_labels, epochs=num_epochs, validation_data=(testing_padded, testing_labels), verbose=1)
+    model.fit(training_padded, 
+              training_labels, 
+              epochs=num_epochs, 
+              validation_data=(testing_padded, testing_labels),
+              callbacks=[tf.keras.callbacks.ProgbarLogger()], verbose=1)
     
     # Save the model and tokenizer
     save_model_and_tokenizer(model, tokenizer)
