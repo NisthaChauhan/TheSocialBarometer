@@ -55,8 +55,8 @@ From sentiment analysis to image clustering and sarcasm detection, this project 
 | Module             | Accuracy |
 |--------------------|----------|
 | Image Clustering   | 85.79%   |
-| Sentiment Analysis | 58.67%   |
-| Sarcasm Detection  | 98.00%   |
+| Sentiment Analysis | 98.00%   |
+| Sarcasm Detection  | 58.67%   |
 
 ---
 
